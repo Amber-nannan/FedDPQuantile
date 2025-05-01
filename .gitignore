@@ -1,0 +1,7 @@
+fed_trainable_*/
+*.json
+*.pyc
+*.pkl
+.validate*
+*.png
+.ipynb_checkpoints

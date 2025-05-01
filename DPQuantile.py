@@ -1,0 +1,100 @@
+import numpy as np
+from typing import Optional
+
+def lr_schedule(step,c0=2,a=0.51):
+    """
+    学习率策略
+    """
+    lr = c0 / (step**a + 100)
+    return lr
+
+class DPQuantile:
+    """差分隐私分位数估计基类"""
+        
+    def __init__(self, tau=0.5, r=0.5, true_q=None,
+     track_history=False, burn_in_ratio=0, use_true_q_init=False):
+        self.tau = tau
+        self.r = r
+        self.true_q = true_q
+        self.track_history = track_history
+        self.burn_in_ratio = burn_in_ratio
+        self.use_true_q_init = use_true_q_init  # 新增参数
+
+    def reset(self, q_est: Optional[float]=None):
+        """重置训练状态"""
+        if self.use_true_q_init and self.true_q is not None:
+            self.q_est = self.true_q  # 从真值开始
+        elif q_est:
+            self.q_est = q_est
+        else:
+            self.q_est = 0.0          # 默认从0开始
+        self.Q_avg = 0.0
+        self.n = 0
+        self.step = 0
+        
+        # 在线推断统计量
+        self.v_a = 0.0
+        self.v_b = 0.0
+        self.v_s = 0.0
+        self.v_q = 0.0
+        self.errors = []
+
+    def _compute_gradient(self, x):
+        """核心梯度计算"""
+        if np.random.rand() < self.r:
+            s = int(x > self.q_est)
+        else:
+            s = np.random.binomial(1, 0.5)
+        
+        delta = ((1 - self.r + 2*self.tau*self.r)/2 if s 
+                else -(1 + self.r - 2*self.tau*self.r)/2)
+        return delta
+
+    def _update_estimator(self, delta, lr):
+        """参数更新"""
+        self.q_est += lr * delta
+        self.step += 1
+
+    def _update_stats(self):
+        """更新统计量"""
+        self.n += 1
+        prev_weight = (self.n - 1) / self.n
+        self.Q_avg = prev_weight * self.Q_avg + self.q_est / self.n
+        
+        # 更新方差统计量
+        term = self.n**2
+        self.v_a += term * self.Q_avg**2
+        self.v_b += term * self.Q_avg
+        self.v_q += term
+        self.v_s += 1
+        
+        if self.track_history and self.true_q is not None:
+            self.errors.append(np.abs(self.Q_avg - self.true_q))
+
+    def fit(self, data_stream):
+        """单机版训练方法"""
+        self.reset()
+        n_samples = len(data_stream)
+        burn_in = int(n_samples * self.burn_in_ratio)  # 计算预热样本数
+        for idx, x in enumerate(data_stream):
+            # 计算当前步骤的学习率
+            lr = lr_schedule(self.step + 1)
+            
+            # 计算梯度并更新估计值
+            delta = self._compute_gradient(x)
+            self._update_estimator(delta, lr)
+            
+            # 跳过预热阶段的统计量更新
+            if idx >= burn_in:
+                self._update_stats()
+            
+            # 提前终止检查
+            if self.step >= n_samples:
+                break
+
+    def get_variance(self):
+        """获取方差估计"""
+        if self.n == 0:
+            return 0.0
+        return (self.v_a - 2*self.Q_avg*self.v_b + 
+               (self.Q_avg**2)*self.v_q) / (self.n**2 * self.v_s)

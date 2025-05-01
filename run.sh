@@ -1,0 +1,1 @@
+nohup python case_ray_tune_2.py > nohup.out 2>&1 &
