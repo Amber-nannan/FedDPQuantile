@@ -1,10 +1,10 @@
 """
 调参目标：寻找在多种tau、E、T组合下都表现良好的(a,c)值
 结合【贝叶斯优化搜策略】/【HyperOpt搜索算法】和【早停策略】
-pip install bayesian-optimization==1.4.3
-pip install hyperopt
 """
 
+# pip install bayesian-optimization==1.4.3
+# pip install hyperopt
 from util_fdp import *
 import ray
 from ray import tune
@@ -17,9 +17,8 @@ import numpy as np
 
 E_choices = [1, 5, 'log']
 tau_choices = [0.3, 0.5, 0.8]
-T_choices = [1000,5000,10000]
-# T_choices = [1000,2000,5000,10000,20000,50000]
-# 20000,50000
+T_choices = [1000,2000,5000,10000,20000,50000]
+
 # 把 run_federated_simulation 包装成一个 trainable
 def fed_trainable(config):
     all_results = []
@@ -98,7 +97,7 @@ def fed_trainable(config):
 if __name__ == "__main__":
     ray.init(runtime_env={"working_dir": "."}) 
     
-    # 定义搜索空间（保持不变）
+    # 定义搜索空间
     config = {
         # 超参空间：使用连续空间
         "a": tune.uniform(0.500001, 0.999999),
@@ -142,6 +141,9 @@ if __name__ == "__main__":
         [{"CPU": 2}] + [{"CPU": 1}] * config["n_clients"]
     )
 
+    from datetime import datetime
+    suffix = datetime.now().strftime("%Y%m%d%H%M%S")
+
     # 调用
     analysis = tune.run(
         fed_trainable,
@@ -154,12 +156,13 @@ if __name__ == "__main__":
         resources_per_trial=pg, 
         max_concurrent_trials=None,
         storage_path="/mnt/ray_tuning/ray_results",
-        name="fed_lr_tuning_avg"
+        name=f"fed_lr_tuning_avg_{suffix}"
     )
+
     
     # 读取已有实验结果
     restored_analysis = tune.ExperimentAnalysis(
-        experiment_checkpoint_path="/mnt/ray_tuning/ray_results/fed_lr_tuning_avg"
+        experiment_checkpoint_path=f"/mnt/ray_tuning/ray_results/fed_lr_tuning_avg_{suffix}"
     )
     
     # 获取所有试验结果
@@ -176,7 +179,7 @@ if __name__ == "__main__":
     print(good_results[['config/a', 'config/c', 'avg_cvg', 'avg_mae', 'good_ratio']])
     
     # 保存结果到 CSV
-    df.to_csv("/mnt/ray_tuning/ray_results/results_avg.csv", index=False)
+    df.to_csv(f"/mnt/ray_tuning/ray_results/results_avg_{suffix}.csv", index=False)
     
     # 打印最佳配置
     print("Best config: ", analysis.get_best_config(metric="combined_metric", mode="min"))
