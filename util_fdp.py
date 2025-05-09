@@ -54,8 +54,14 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
         mode: 'federated'（联邦训练）或 'global'（全局训练）
     """
     np.random.seed(2025)
-    mus = np.random.normal(loc=0,scale=gene_process,size=n_clients) if isinstance(gene_process,float) else np.zeros(n_clients) 
-    # mus = np.random.randn(n_clients)*gene_process if isinstance(gene_process,float) else np.zeros(n_clients)   # hete 指的是均值不同（从标准正态分布里生成）、hete_d指的是分布不同
+    # mus = np.random.randn(n_clients) if gene_process == 'hete' else np.zeros(n_clients)
+    if gene_process == 'hete':
+        mus = np.random.randn(n_clients)
+    elif gene_process == 'homo':
+        mus = np.zeros(n_clients)
+    elif isinstance(gene_process,float):
+        mus = np.random.normal(loc=0,scale=gene_process,size=n_clients)
+        
     np.random.seed(seed)
     clients_data = []
     ET, Em_list = get_Em_list(T, typ=E_typ, E_cons=E_cons)
