@@ -4,4 +4,8 @@ fed_trainable_*/
 *.pkl
 .validate*
 *.png
+*.csv
+*.out
+*.log
+*.xlsx
 .ipynb_checkpoints

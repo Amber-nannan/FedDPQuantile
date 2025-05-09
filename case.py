@@ -20,36 +20,35 @@ dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
 gene_process = 'hete'
 mode='federated'
 n_sim = 1000
-n_sim = 1000
 seed = 2025
 
-Ts = [5000,50000]
+Ts=[20000]
+# Ts = [5000,10000,20000,50000]
 # Ts = [5000]
-taus = [0.3,0.5,0.8]
-# taus = [0.3]
-rs = [0.25,0.9]
+taus=[0.8]
+# taus = [0.3,0.5,0.8]
+# taus = [0.5]
+rs = [0.25,0.5,0.85,0.95]
 
 n_clients = 10
-client_rss = generate_lists(rs[0], rs[1], n_clients)
-rs_names = [rs[0],'hetero',rs[1]]
-# client_rss = [generate_lists(rs[0], rs[1], n_clients)[-1]]
-# rs_names = [rs[-1]]
+client_rss = [[rs[i]]*n_clients for i in range(len(rs))]
+rs_names = rs
+# client_rss = generate_lists(rs[0], rs[1], n_clients)
+# rs_names = [rs[0],rs[1]]
 
-# Es = [1, 5, 'log']
-Es = [1, 5,'log']
+Es = ['log']
+# Es = [1, 5,'log']
 nn_ct = len(Ts)*len(taus)*len(client_rss)*len(Es)
 
 # 初始化结果存储字典（使用defaultdict自动创建嵌套结构）
 cvgdict = {}
 maedict = {}
 
-abdict = {
-    (0.3,0.25):(0.51,25),
-    (0.3,0.9): (0.99,225),
-    (0.5,0.25):(0.63,0),
-    (0.5,0.9): (0.51,125),
-    (0.8,0.25):(0.51,25),
-    (0.8,0.9):(0.87,25)
+acdict = {
+    0.25:(0.546, 1), 
+    0.5: (0.507, 1),
+    0.85:(0.591, 2),
+    0.95:(0.503, 2)
 }
 
 # 联邦模拟
@@ -67,17 +66,13 @@ for T in Ts:
 
             if name == 'hetero':   # table2 暂时不关注hetero
                 continue
-            # 不同的tau和r(names)的组合对应不同的 a,b
-            a, b = abdict[(tau, name)]
+            # 不同r(names)的组合对应不同的 a,c
+            a, c = acdict[name]
 
             cvgdict[T][tau][name] = {}
             maedict[T][tau][name] = {}
             for E in Es:
-                # cvgdict[T][tau][name][E] = {}
-                # maedict[T][tau][name][E] = {}
                 E_typ = 'log' if E == 'log' else 'cons'
-                # for a in a_vals:
-                #     for b in b_vals:
                 t1 = time.time()
                 fed_results = run_federated_simulation(
                     dist_type=dist_type,tau=tau,
@@ -85,7 +80,7 @@ for T in Ts:
                     T=T,E_typ=E_typ,E_cons=E,gene_process=gene_process,
                     mode=mode,
                     n_sim=n_sim,base_seed=seed,
-                    a=a, b=b)
+                    a=a, b=0,c=c)
                 # 分析结果
                 z_score = 6.753 if E == 'log' else 6.74735
                 output = analyze_results(fed_results,z_score=z_score)
@@ -93,15 +88,12 @@ for T in Ts:
                 mae = output['mae']
 
                 # 存储结果
-                # cvgdict[T][tau][name][E][(a, b)] = cvg
-                # maedict[T][tau][name][E][(a, b)] = mae
                 cvgdict[T][tau][name][E] = cvg
                 maedict[T][tau][name][E] = mae
                 t2 = time.time()
                 ct += 1
-                # tune.report({"cvg": cvg, "mae": mae})
-                save_pickle(cvgdict, f'./case_{mode}_{gene_process}_cvg.pkl')
-                save_pickle(maedict, f'./case_{mode}_{gene_process}_mae.pkl')
+                save_pickle(cvgdict, f'./case_rs_{mode}_{gene_process}_cvg.pkl')
+                save_pickle(maedict, f'./case_rs_{mode}_{gene_process}_mae.pkl')
                 print(f'Ts:{T} tau:{tau} name:{name} E:{E} TC:{(t2-t1)/60:.2f}min LTC:{(t2-t1)*(nn_ct-ct)/60:.2f}min')
                 
 ray.shutdown()

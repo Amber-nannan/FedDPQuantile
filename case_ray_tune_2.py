@@ -95,6 +95,11 @@ def fed_trainable(config):
     })
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description='联邦学习调参实验')
+    parser.add_argument('-r', type=float, default=1, help='响应率')
+    args = parser.parse_args()
+
     ray.init(runtime_env={"working_dir": "."}) 
     
     # 定义搜索空间
@@ -108,7 +113,7 @@ if __name__ == "__main__":
         "dist_type": "normal",  
         "gene_process": "hete",
         "mode": "federated",
-        "r": 0.25,    # r=0.25 固定
+        "r": args.r,    # r=0.25 固定
         # 常数参数
         "n_clients": 10,
         "n_sim": 100,
@@ -141,15 +146,14 @@ if __name__ == "__main__":
         [{"CPU": 2}] + [{"CPU": 1}] * config["n_clients"]
     )
 
-    from datetime import datetime
-    suffix = datetime.now().strftime("%Y%m%d%H%M%S")
+    from datetime import datetime, timedelta
+    now = datetime.utcnow() + timedelta(hours=8)  #（东八区）时间
+    suffix = now.strftime("%Y%m%d%H%M%S")
 
     # 调用
     analysis = tune.run(
         fed_trainable,
         config=config,
-        metric="combined_metric",
-        mode="min",
         search_alg=search_alg,     # 使用贝叶斯优化
         scheduler=scheduler,       # 使用ASHA调度器
         num_samples=50,            # 总共尝试的样本数
@@ -168,21 +172,7 @@ if __name__ == "__main__":
     # 获取所有试验结果
     df = restored_analysis.results_df
     
-    # 筛选满足条件的结果
-    good_results = df[
-        (df['avg_cvg'] > 0.95) & 
-        (df['avg_mae'] < 0.005) &
-        (df['good_ratio'] > 0.8)  # 至少80%的组合表现良好
-    ]
-    
-    print("\n最佳 (a,c) 组合：")
-    print(good_results[['config/a', 'config/c', 'avg_cvg', 'avg_mae', 'good_ratio']])
-    
     # 保存结果到 CSV
     df.to_csv(f"/mnt/ray_tuning/ray_results/results_avg_{suffix}.csv", index=False)
-    
-    # 打印最佳配置
-    print("Best config: ", analysis.get_best_config(metric="combined_metric", mode="min"))
-    print("Best performance: ", analysis.best_result)
     
     ray.shutdown()

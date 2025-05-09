@@ -1,0 +1,4 @@
+ray[tune]>=2.6.3
+bayesian-optimization==1.4.3
+hyperopt>=0.2.7
+openpyxl>=3.1.5

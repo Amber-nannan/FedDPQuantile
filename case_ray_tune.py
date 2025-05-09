@@ -8,9 +8,11 @@ from ray.tune.schedulers import ASHAScheduler
 
 # r = 0.25, 找一组a,c，# r = 0.25, 找一组a,c，对tau = [0.3,0.5,0.8], E = [1,5,'log'], T=1000/2000/10000/20000 表现好（指cvg大且mae小）
 
-E_choices = [1, 5, 'log']
+E_choices = ['log']
+# E_choices = [1,4,5,10,'log']
 tau_choices = [0.3, 0.5, 0.8]
-T_choices = [1000,2000,5000,10000,20000,50000]
+T_choices = [20000,50000]
+# T_choices = [1000,2000,5000,10000,20000,50000]
 
 # 把 run_federated_simulation 包装成一个 trainable
 def fed_trainable(config):
@@ -48,25 +50,30 @@ if __name__ == "__main__":
     # 定义搜索空间
     config = {
         # 超参空间：用网格搜索
-        "a": tune.grid_search([0.51, 0.6, 0.7, 0.8, 0.9,0.99]), 
+        "a": tune.grid_search([0.568]), 
         "b": 0,
-        "c": tune.grid_search([1,2,3,4,5]),
+        "c": tune.grid_search([1]),
         "tau": tune.grid_search(tau_choices),
         "E": tune.grid_search(E_choices),
         "T": tune.grid_search(T_choices),
         "dist_type": "normal",  
         "gene_process": "hete",
+        # "gene_process": tune.grid_search([0.5, 0.3, 0.1]),
         "mode": "federated",
         "r": 0.25,    # r=0.25 固定
         # 常数参数
         "n_clients": 10,
-        "n_sim": 100,
+        "n_sim": 1000,
         "base_seed": 2025,
     }
 
     pg = tune.PlacementGroupFactory(
         [{"CPU": 2}] + [{"CPU": 1}] * config["n_clients"]
     )
+
+    from datetime import datetime, timedelta
+    now = datetime.utcnow() + timedelta(hours=8)  #（东八区）时间
+    suffix = now.strftime("%Y%m%d%H%M%S")
 
     # 调用
     analysis = tune.run(
@@ -76,32 +83,17 @@ if __name__ == "__main__":
         resources_per_trial=pg, 
         max_concurrent_trials=12,  # 限制最大并行试验数
         storage_path="/mnt/ray_tuning/ray_results",         # 结果输出目录
-        name="fed_lr_tuning"
+        name=f"fed_lr_tuning_{suffix}"
     )
     
     # 读取已有实验结果
     restored_analysis = tune.ExperimentAnalysis(
-        experiment_checkpoint_path="/mnt/ray_tuning/ray_results/fed_lr_tuning"
+        experiment_checkpoint_path=f"/mnt/ray_tuning/ray_results/fed_lr_tuning_{suffix}"
     )
     
     # 获取所有试验结果
     df = restored_analysis.results_df
     
-    # 按 (a,c) 分组计算平均值
-    grouped_results = df.groupby(['config/a', 'config/c']).agg({
-        'cvg': 'mean',
-        'mae': 'mean'
-    }).reset_index()
-    
-    # 筛选满足条件的结果
-    good_results = grouped_results[
-        (grouped_results['cvg'] > 0.95) & 
-        (grouped_results['mae'] < 0.005)
-    ]
-    
-    print("\n最佳 (a,c) 组合：")
-    print(good_results)
-    
     # 保存结果到 CSV
-    df.to_csv("/mnt/ray_tuning/ray_results/results.csv", index=False)
-    grouped_results.to_csv("/mnt/ray_tuning/ray_results/grouped_results.csv", index=False)
+    df.to_csv(f"/mnt/ray_tuning/ray_results/results_{suffix}.csv", index=False)
+    # grouped_results.to_csv("/mnt/ray_tuning/ray_results/grouped_results.csv", index=False)
