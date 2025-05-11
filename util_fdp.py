@@ -57,7 +57,7 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
     # mus = np.random.randn(n_clients) if gene_process == 'hete' else np.zeros(n_clients)
     if gene_process == 'hete':
         mus = np.random.randn(n_clients)
-    elif gene_process == 'homo':
+    elif gene_process == 'homo' or gene_process=='hete_d':
         mus = np.zeros(n_clients)
     elif isinstance(gene_process,float):
         mus = np.random.normal(loc=0,scale=gene_process,size=n_clients)

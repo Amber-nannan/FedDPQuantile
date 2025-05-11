@@ -60,7 +60,7 @@ for T in Ts:
                     client_rs=client_rs,n_clients=n_clients,
                     T=T,E_typ=E_typ,E_cons=E,gene_process=gene_process,
                     mode=mode,
-                    n_sim=n_sim,base_seed=seed)
+                    n_sim=n_sim,base_seed=seed,a=0.51, b=100,c=20)
                 # 分析结果
                 z_score = 6.753 if E == 'log' else 6.74735
                 output = analyze_results(fed_results,z_score=z_score)
