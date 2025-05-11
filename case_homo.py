@@ -19,7 +19,7 @@ gene_process = 'homo'
 # gene_process = 'hete'
 mode='federated'
 n_sim = 1000
-seed = 2025
+seed = 42
 
 # Ts = [5000,10000,20000,50000]
 Ts = [5000,50000]
