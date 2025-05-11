@@ -4,21 +4,22 @@ from DPQuantile import DPQuantile
 class FedDPQuantile(DPQuantile):
     """联邦差分隐私分位数估计"""
     
-    def __init__(self, n_clients=1, pk=None, client_rs=None, a=0.51, b=100,c=2, **kwargs):
+    def __init__(self, n_clients=1, pk=None, client_rs=None, a=0.51, b=100,c=2,seed=2025,**kwargs):
         super().__init__(**kwargs)
         self.n_clients = n_clients
         self.pk_init = pk
-        # self.c0 = self.n_clients
         self.a = a
         self.b = b
         self.c0 = c
+        self.seed = seed
         
         # 处理客户端隐私参数
         self.client_rs = client_rs if client_rs else [self.r] * n_clients
         if len(self.client_rs) != n_clients:
             raise ValueError("client_rs长度必须与n_clients一致")
         self.clients = [self._create_client(i) for i in range(self.n_clients)]
-        np.random.seed(2025)
+        
+        np.random.seed(self.seed)
         q_est = np.random.normal(0, 1)  # 随机初始值
         for clients in self.clients:
             clients.reset(q_est)    # 每个机器相同的随机初始值

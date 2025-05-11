@@ -53,7 +53,7 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
     参数:
         mode: 'federated'（联邦训练）或 'global'（全局训练）
     """
-    np.random.seed(2025)
+    np.random.seed(seed)
     # mus = np.random.randn(n_clients) if gene_process == 'hete' else np.zeros(n_clients)
     if gene_process == 'hete':
         mus = np.random.randn(n_clients)
@@ -62,7 +62,6 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
     elif isinstance(gene_process,float):
         mus = np.random.normal(loc=0,scale=gene_process,size=n_clients)
         
-    np.random.seed(seed)
     clients_data = []
     ET, Em_list = get_Em_list(T, typ=E_typ, E_cons=E_cons)
 
@@ -100,12 +99,12 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
         global_data = [np.concatenate(clients_data)]
         np.random.shuffle(global_data)
         model = FedDPQuantile(n_clients=1, client_rs=client_rs, tau=tau,
-                              true_q=global_true_q,use_true_q_init=use_true_q_init,a=a, b=b,c=c)
+                              true_q=global_true_q,use_true_q_init=use_true_q_init,a=a, b=b,c=c,seed=seed)
         model.fit(global_data, Em_list)
     elif mode == 'federated':
         # 联邦训练模式：保留客户端数据
         model = FedDPQuantile(n_clients=n_clients, client_rs=client_rs, tau=tau,
-                              true_q=global_true_q,use_true_q_init=use_true_q_init,a=a, b=b,c=c)
+                              true_q=global_true_q,use_true_q_init=use_true_q_init,a=a, b=b,c=c,seed=seed)
         model.fit(clients_data, Em_list)
     return global_true_q, model.Q_avg, model.get_variance(), model.errors
 
