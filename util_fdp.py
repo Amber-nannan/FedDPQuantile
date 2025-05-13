@@ -94,37 +94,6 @@ def get_Em_list(total_samples, warm_up=0.05, typ='log', E_cons=1):
         # 生成最终的迭代次数列表
         Em_list = [1] * warm_up_samples + Em
         return total_samples, Em_list
-        
-    elif typ == 'log':
-        # 对于对数型迭代次数，使用二分查找找到合适的T值
-        left, right = 1, total_samples
-        best_T = 1
-        best_total = 0
-        best_Em = []
-        
-        while left <= right:
-            T = (left + right) // 2
-            warm_up_rounds = max(1, int(T * warm_up))
-            main_rounds = T - warm_up_rounds
-            
-            if main_rounds <= 0:
-                left = T + 1
-                continue
-                
-            Em = [int(np.ceil(np.log2(m + 1))) for m in range(1, main_rounds + 1)]
-            current_total = warm_up_rounds + sum(Em)
-            
-            if current_total <= total_samples and current_total > best_total:
-                best_total = current_total
-                best_T = T
-                best_Em = [1] * warm_up_rounds + Em
-            
-            if current_total < total_samples:
-                left = T + 1
-            else:
-                right = T - 1
-        
-        return best_total, best_Em
 
 def save_pickle(var, file_path):
     """保存变量到pickle文件"""
