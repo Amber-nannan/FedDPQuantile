@@ -37,7 +37,7 @@ def solve_quantile(mu_list, tau, xtol=1e-8):
 #         Em = [E_cons] * minor
 #     return pre + sum(Em), [1] * pre + Em
 
-def get_Em_list(total_samples, warm_up=0.05, typ='log', E_cons=1):
+def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1):
     """
     根据总样本量生成通信轮数和每轮的本地迭代次数
     
@@ -50,6 +50,7 @@ def get_Em_list(total_samples, warm_up=0.05, typ='log', E_cons=1):
     返回:
         总样本量, 迭代次数列表
     """
+    total_samples = T
     if typ == 'cons':
         # 对于常数迭代次数，直接计算
         warm_up_samples = int(total_samples * warm_up)

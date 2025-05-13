@@ -9,3 +9,4 @@ fed_trainable_*/
 *.log
 *.xlsx
 .ipynb_checkpoints
+core
