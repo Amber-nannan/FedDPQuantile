@@ -26,7 +26,8 @@ Ts = [5000,50000]
 # Ts = [5000]
 taus = [0.3,0.5,0.8]
 # taus = [0.5]
-rs = [0.25,0.9]
+# rs = [0.25,0.9]
+rs = [0.9]
 
 n_clients = 10
 client_rss = [[rs[i]]*n_clients for i in range(len(rs))]
@@ -41,9 +42,12 @@ nn_ct = len(Ts)*len(taus)*len(client_rss)*len(Es)
 cvgdict = {}
 maedict = {}
 
-acdict = {
-    0.25:(0.546, 1), 
-    0.9: (0.568, 1)
+# key=(r,E), value=(a,b,c)
+abc_dict = {
+    # 0.25:(0.546, 1), 
+    (0.9, 1): (0.568, 0, 1),
+    (0.9, 5): (0.568, 0, 1),
+    (0.9, 'log'): (0.782, 25, 2),
 }
 
 # 联邦模拟
@@ -61,13 +65,13 @@ for T in Ts:
 
             if name == 'hetero':   # table2 暂时不关注hetero
                 continue
-            # 不同r(names)的组合对应不同的 a,c
-            a, c = acdict[name]
 
             cvgdict[T][tau][name] = {}
             maedict[T][tau][name] = {}
             for E in Es:
                 E_typ = 'log' if E == 'log' else 'cons'
+                a, b, c = abc_dict[(name, E)]  # 不同r(names)、E的组合对应不同的 (a,b,c)
+
                 t1 = time.time()
                 fed_results = run_federated_simulation(
                     dist_type=dist_type,tau=tau,
@@ -75,7 +79,7 @@ for T in Ts:
                     T=T,E_typ=E_typ,E_cons=E,gene_process=gene_process,
                     mode=mode,
                     n_sim=n_sim,base_seed=seed,
-                    a=a, b=0,c=c)
+                    a=a, b=b,c=c)
                 # 分析结果
                 z_score = 6.753 if E == 'log' else 6.74735
                 output = analyze_results(fed_results,z_score=z_score)

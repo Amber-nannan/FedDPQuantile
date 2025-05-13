@@ -18,7 +18,7 @@ import numpy as np
 # E_choices = [1, 5, 'log']
 # r_choices = [0.25, 0.5, 0.9]
 tau_choices = [0.3, 0.5, 0.8]
-T_choices = [20000,50000]
+T_choices = [5000,50000]
 
 # 把 run_federated_simulation 包装成一个 trainable
 def fed_trainable(config):
