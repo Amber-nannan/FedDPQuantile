@@ -111,7 +111,7 @@ if __name__ == "__main__":
     config = {
         # 超参空间：使用连续空间
         "a": tune.uniform(0.500001, 0.999999),
-        "b": tune.choice([0,25,50,75,100,125,150,175,200]),
+        "b": 0,
         "c": tune.randint(1, 6),
         "dist_type": "normal",  
         "gene_process": "hete",
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         config=config,
         search_alg=search_alg,     # 使用贝叶斯优化
         scheduler=scheduler,       # 使用ASHA调度器
-        num_samples=30,            # 总共尝试的样本数
+        num_samples=50,            # 总共尝试的样本数
         resources_per_trial=pg, 
         max_concurrent_trials=None,
         storage_path="/mnt/ray_tuning/ray_results",

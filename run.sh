@@ -28,5 +28,6 @@ nohup python case_ray_tune_4.py -r 0.9 -E log > nohup_r_0_9_E_log.out 2>&1 &
 nohup python case_ray_tune_4.py -r 0.9 -E log > nohup_r_0_9_E_log_c_1.out 2>&1 &
 nohup python case_ray_tune_4_copy.py -r 0.9 -E log > nohup_r_0_9_E_log_c_2.out 2>&1 &
 
-nohup python case_ray_tune_4.py -r 0.25 -E 1 > nohup_r_0_25_E_log_c_1.out 2>&1 &
-nohup python case_ray_tune_4_copy.py -r 0.25 -E 1 > nohup_r_0_25_E_log_c_2.out 2>&1 &
+# 调 a,c
+nohup python case_ray_tune_4.py -r 0.25 -E 1 > nohup_r_0_25_E_1.out 2>&1 &
+nohup python case_ray_tune_4_copy.py -r 0.25 -E 1 > nohup_r_0_25_E_1.out 2>&1 &
