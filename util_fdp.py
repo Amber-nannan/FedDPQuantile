@@ -143,7 +143,7 @@ def run_federated_trajectory(dist_type, tau, client_rs, n_clients,
                             T, E_typ, E_cons, gene_process, mode, use_true_q_init=False, base_seed=2025,
                             a=0.51, b=100, c=2):
     """运行单次联邦训练，返回训练轨迹"""
-    # 直接调用train函数，不使用ray
+    
     future = train_history_remote.remote(base_seed, dist_type, tau, client_rs, n_clients, T, E_typ,
                 E_cons, gene_process, mode, use_true_q_init=use_true_q_init,
                 a=a, b=b, c=c, return_history=True)
