@@ -12,6 +12,8 @@ class FedDPQuantile(DPQuantile):
         self.b = b
         self.c0 = c
         self.seed = seed
+        self.global_q_avg_history = {}    # 添加全局统计量历史记录
+        self.global_variance_history = {}
         
         # 处理客户端隐私参数
         self.client_rs = client_rs if client_rs else [self.r] * n_clients
@@ -24,6 +26,10 @@ class FedDPQuantile(DPQuantile):
         for clients in self.clients:
             clients.reset(q_est)    # 每个机器相同的随机初始值
             # clients.reset()
+        
+        # 添加全局统计量历史记录
+        self.global_q_avg_history = {}
+        self.global_variance_history = {}
             
     def _lr_schedule(self,step,c0=2,a=0.51,b=100):
         """
@@ -73,6 +79,7 @@ class FedDPQuantile(DPQuantile):
                     delta = client._compute_gradient(x)
                     lr = self._lr_schedule(m_prime + 1,c0=self.c0,a=self.a,b=self.b) 
                     client._update_estimator(delta, lr/Em)
+                    client._update_stats()
                 
                 client_params.append(client.q_est)
 
@@ -95,7 +102,28 @@ class FedDPQuantile(DPQuantile):
         self.v_s += 1 / Em
         self.v_q += term
         
+        # 记录全局统计量（使用clients[0].n作为索引）
+        local_n = self.clients[0].n
+        self.global_q_avg_history[local_n] = self.Q_avg
+        self.global_variance_history[local_n] = self.get_variance()
+        
         # 同步到所有客户端
         for client in self.clients:
             client.q_est = global_est
             client.Q_avg = self.Q_avg
+    
+    def get_stats_history(self):
+        """获取统计量历史记录"""
+        # 返回本地客户端的Q_avg历史
+        local_stats = {f"client_{i}": client.q_avg_history for i, client in enumerate(self.clients)}
+        
+        # 返回全局统计量历史
+        global_stats = {
+            "global_q_avg": self.global_q_avg_history,
+            "global_variance": self.global_variance_history
+        }
+        
+        return {
+            "local": local_stats,
+            "global": global_stats
+        }

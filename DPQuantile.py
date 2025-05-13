@@ -19,6 +19,7 @@ class DPQuantile:
         self.track_history = track_history
         self.burn_in_ratio = burn_in_ratio
         self.use_true_q_init = use_true_q_init  # 新增参数
+        self.q_avg_history = {}  # 记录每次更新的Q_avg
 
     def reset(self, q_est: Optional[float]=None):
         """重置训练状态"""
@@ -60,6 +61,9 @@ class DPQuantile:
         self.n += 1
         prev_weight = (self.n - 1) / self.n
         self.Q_avg = prev_weight * self.Q_avg + self.q_est / self.n
+        
+        # 记录当前样本数量对应的Q_avg
+        self.q_avg_history[self.n] = self.Q_avg
         
         # 更新方差统计量
         term = self.n**2
