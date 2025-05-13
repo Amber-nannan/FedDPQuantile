@@ -50,8 +50,8 @@ if __name__ == "__main__":
     # 定义搜索空间
     config = {
         # 超参空间：用网格搜索
-        "a": tune.grid_search([0.568]), 
-        "b": 0,
+        "a": tune.grid_search([0.51, 0.6, 0.7, 0.8, 0.9, 0.99]),
+        "b": tune.grid_search([0,25,50,75,100]),
         "c": tune.grid_search([1]),
         "tau": tune.grid_search(tau_choices),
         "E": tune.grid_search(E_choices),
@@ -60,10 +60,10 @@ if __name__ == "__main__":
         "gene_process": "hete",
         # "gene_process": tune.grid_search([0.5, 0.3, 0.1]),
         "mode": "federated",
-        "r": 0.25,    # r=0.25 固定
+        "r": 0.9,    # r=0.25 固定
         # 常数参数
         "n_clients": 10,
-        "n_sim": 1000,
+        "n_sim": 100,
         "base_seed": 2025,
     }
 

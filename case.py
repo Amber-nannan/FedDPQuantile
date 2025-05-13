@@ -22,13 +22,11 @@ mode='federated'
 n_sim = 1000
 seed = 2025
 
-Ts=[20000]
-# Ts = [5000,10000,20000,50000]
+Ts = [5000,50000]
 # Ts = [5000]
-taus=[0.8]
-# taus = [0.3,0.5,0.8]
+taus = [0.3,0.5,0.8]
 # taus = [0.5]
-rs = [0.25,0.5,0.85,0.95]
+rs = [0.25,0.9]
 
 n_clients = 10
 client_rss = [[rs[i]]*n_clients for i in range(len(rs))]
@@ -36,8 +34,7 @@ rs_names = rs
 # client_rss = generate_lists(rs[0], rs[1], n_clients)
 # rs_names = [rs[0],rs[1]]
 
-Es = ['log']
-# Es = [1, 5,'log']
+Es = [1, 5,'log']
 nn_ct = len(Ts)*len(taus)*len(client_rss)*len(Es)
 
 # 初始化结果存储字典（使用defaultdict自动创建嵌套结构）
@@ -46,9 +43,7 @@ maedict = {}
 
 acdict = {
     0.25:(0.546, 1), 
-    0.5: (0.507, 1),
-    0.85:(0.591, 2),
-    0.95:(0.503, 2)
+    0.9: (0.568, 1)
 }
 
 # 联邦模拟
