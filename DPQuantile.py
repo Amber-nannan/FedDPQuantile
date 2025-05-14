@@ -86,7 +86,7 @@ class DPQuantile:
         burn_in = int(n_samples * self.burn_in_ratio)  # 计算预热样本数
         for idx, x in enumerate(data_stream):
             # 计算当前步骤的学习率
-            lr = lr_schedule(self.step + 1,
+            lr = self._lr_schedule(self.step + 1,
                             c0=self.c0,a=self.a,b=self.b)
             
             # 计算梯度并更新估计值
