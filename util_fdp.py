@@ -158,18 +158,20 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
     # 根据模式选择数据处理方式
     if mode == 'global':
         # 全局训练模式：合并数据，n_clients=1
-        _, Em_list = get_Em_list(T*n_clients, typ=E_typ, E_cons=E_cons)
-        global_data = [np.concatenate(clients_data)]
-        np.random.shuffle(global_data)
-        model = FedDPQuantile(n_clients=1, client_rs=client_rs, tau=tau,
-                              true_q=global_true_q,use_true_q_init=use_true_q_init,a=a, b=b,c=c,seed=seed)
-        model.fit(global_data, Em_list)
+        # 全局训练模式：合并数据，n_clients=1
+        Q_avgs = []; Vars = []
+        for i,data_i in enumerate(clients_data):
+            model = DPQuantile(tau=tau, r=client_rs[i], true_q=global_true_q,seed=seed)
+            model.fit(data_i)
+            Q_avgs.append(model.Q_avg)
+            Vars.append(model.get_variance())
+        return global_true_q, np.mean(Q_avgs), np.mean(Vars), _
     elif mode == 'federated':
         # 联邦训练模式：保留客户端数据
         model = FedDPQuantile(n_clients=n_clients, client_rs=client_rs, tau=tau,
                               true_q=global_true_q,use_true_q_init=use_true_q_init,a=a, b=b,c=c,seed=seed)
         model.fit(clients_data, Em_list)
-    return global_true_q, model.Q_avg, model.get_variance(), model.errors
+        return global_true_q, model.Q_avg, model.get_variance(), model.errors
 
 
 @ray.remote
