@@ -12,13 +12,15 @@ class DPQuantile:
     """差分隐私分位数估计基类"""
         
     def __init__(self, tau=0.5, r=0.5, true_q=None,
-     track_history=False, burn_in_ratio=0, use_true_q_init=False):
+     track_history=False, burn_in_ratio=0, use_true_q_init=False,
+                seed=2025):
         self.tau = tau
         self.r = r
         self.true_q = true_q
         self.track_history = track_history
         self.burn_in_ratio = burn_in_ratio
         self.use_true_q_init = use_true_q_init  # 新增参数
+        self.seed=seed
 
     def reset(self, q_est: Optional[float]=None):
         """重置训练状态"""
@@ -27,7 +29,8 @@ class DPQuantile:
         elif q_est:
             self.q_est = q_est
         else:
-            self.q_est = 0.0          # 默认从0开始
+            np.random.seed(self.seed)
+            self.q_est = np.random.normal(0,1)
         self.Q_avg = 0.0
         self.n = 0
         self.step = 0
