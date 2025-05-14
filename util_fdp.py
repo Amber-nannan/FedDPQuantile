@@ -106,8 +106,9 @@ def load_pickle(file_path):
         return pickle.load(f)
 
 
-def train(seed, dist_type, taus, client_rs, n_clients, T, E_typ='log', E_cons=1,
-          gene_process='homo', mode='federated', use_true_q_init=False, a=0.51, b=100,c=2, T_mode='rounds'):
+def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
+          gene_process='homo', mode='federated', use_true_q_init=False, a=0.51, b=100,c=2,
+          return_history=False):
     """
     单次联邦实验（合并全局训练和联邦训练版本）
     
@@ -171,6 +172,10 @@ def train(seed, dist_type, taus, client_rs, n_clients, T, E_typ='log', E_cons=1,
                               taus=taus,
                               true_q=global_true_q,use_true_q_init=use_true_q_init,a=a, b=b,c=c,seed=seed)
         model.fit(clients_data, Em_list)
+
+    if return_history:
+        return model.get_stats_history()
+    else:
         return global_true_q, model.Q_avg, model.get_variance(), model.errors
 
 
@@ -192,3 +197,21 @@ def run_federated_simulation(dist_type, taus, client_rs, n_clients,
                                    a=a, b=b, c=c, T_mode=T_mode) for i in range(n_sim)]
     results = ray.get(futures)
     return package_results(results)
+
+
+@ray.remote
+def train_history_remote(seed, dist_type, tau, client_rs, n_clients, T, E_typ,
+                 E_cons, gene_process, mode, use_true_q_init=False, a=0.51, b=100, c=2, return_history=True):
+    return train(seed, dist_type, tau, client_rs, n_clients, T, E_typ,
+                 E_cons, gene_process, mode, use_true_q_init=use_true_q_init, a=a, b=b, c=c, return_history=return_history)
+
+def run_federated_trajectory(dist_type, tau, client_rs, n_clients, 
+                            T, E_typ, E_cons, gene_process, mode, use_true_q_init=False, base_seed=2025,
+                            a=0.51, b=100, c=2):
+    """运行单次联邦训练，返回训练轨迹"""
+    
+    future = train_history_remote.remote(base_seed, dist_type, tau, client_rs, n_clients, T, E_typ,
+                E_cons, gene_process, mode, use_true_q_init=use_true_q_init,
+                a=a, b=b, c=c, return_history=True)
+    result = ray.get(future)
+    return result
