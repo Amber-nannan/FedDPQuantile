@@ -42,22 +42,13 @@ cvgdict = {}
 maedict = {}
 
 # key=(r,E), value=(a,b,c)
-# abc_dict = {
-#     (0.25, 1):(0.501, 0, 2), 
-#     (0.25, 5):(0.546, 0, 1), 
-#     (0.25, 'log'):(0.546, 0, 1), 
-#     (0.9, 1): (0.568, 0, 1),
-#     (0.9, 5): (0.568, 0, 1),
-#     (0.9, 'log'): (0.782, 25, 2),
-# }
-
 abc_dict = {
     (0.25, 1):(0.51, 100, 20), 
     (0.25, 5):(0.51, 100, 20), 
     (0.25, 'log'):(0.51, 100, 20), 
     (0.9, 1): (0.51, 100, 20),
-    (0.9, 5): (0.51, 100, 20),
-    (0.9, 'log'): (0.51, 100, 20),
+    (0.9, 5): (0.568, 0, 1),
+    (0.9, 'log'): (0.782, 25, 2),
 }
 
 # 联邦模拟
@@ -89,7 +80,7 @@ for T in Ts:
                     T=T,E_typ=E_typ,E_cons=E,gene_process=gene_process,
                     mode=mode,
                     n_sim=n_sim,base_seed=seed,
-                    a=a, b=b,c=c)
+                    a=a, b=b,c=c,T_mode='rounds')
                 # 分析结果
                 z_score = 6.753 if E == 'log' else 6.74735
                 output = analyze_results(fed_results,z_score=z_score)
