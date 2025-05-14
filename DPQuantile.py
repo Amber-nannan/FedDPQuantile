@@ -1,18 +1,13 @@
 import numpy as np
 from typing import Optional
 
-def lr_schedule(step,c0=2,a=0.51):
-    """
-    学习率策略
-    """
-    lr = c0 / (step**a + 100)
-    return lr
+
 
 class DPQuantile:
     """差分隐私分位数估计基类"""
         
     def __init__(self, tau=0.5, r=0.5, true_q=None,
-     track_history=False, burn_in_ratio=0, use_true_q_init=False,
+     track_history=False, burn_in_ratio=0, use_true_q_init=False,a=0.51,b=100,c=2,
                 seed=2025):
         self.tau = tau
         self.r = r
@@ -20,7 +15,17 @@ class DPQuantile:
         self.track_history = track_history
         self.burn_in_ratio = burn_in_ratio
         self.use_true_q_init = use_true_q_init  # 新增参数
+        self.a = a
+        self.b = b
+        self.c0 = c
         self.seed=seed
+
+    def _lr_schedule(self,step,c0=2,a=0.51,b=100):
+        """
+        学习率策略
+        """
+        lr = c0 / (step**a + b)  # lr = c0 / (step**a + 500)
+        return lr
 
     def reset(self, q_est: Optional[float]=None):
         """重置训练状态"""
@@ -81,7 +86,8 @@ class DPQuantile:
         burn_in = int(n_samples * self.burn_in_ratio)  # 计算预热样本数
         for idx, x in enumerate(data_stream):
             # 计算当前步骤的学习率
-            lr = lr_schedule(self.step + 1)
+            lr = lr_schedule(self.step + 1,
+                            c0=self.c0,a=self.a,b=self.b)
             
             # 计算梯度并更新估计值
             delta = self._compute_gradient(x)

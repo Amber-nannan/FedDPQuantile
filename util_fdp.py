@@ -4,6 +4,7 @@ import time
 sys.path.append('..')
 from util import *
 from FedDPQuantile import FedDPQuantile
+from DPQuantile import DPQuantile
 import pickle
 import os
 from scipy.stats import norm
@@ -161,7 +162,7 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
         # 全局训练模式：合并数据，n_clients=1
         Q_avgs = []; Vars = []
         for i,data_i in enumerate(clients_data):
-            model = DPQuantile(tau=tau, r=client_rs[i], true_q=global_true_q,seed=seed)
+            model = DPQuantile(tau=tau, r=client_rs[i], true_q=global_true_q,a=a, b=b,c=c,seed=seed)
             model.fit(data_i)
             Q_avgs.append(model.Q_avg)
             Vars.append(model.get_variance())

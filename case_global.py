@@ -16,18 +16,20 @@ ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
 
 
 dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
-gene_process = 'hete'
+gene_process = 'hete_d'
 mode='global'
 n_sim = 1000
-seed = 2025
+seed = 2025 # 42 for homo 2025 for hete
 n_clients = 10
 
-Ts = [5000,50000]   # communication rounds
+Ts = [10000, 50000]
 taus = [0.3,0.5,0.8]
 
-client_rs = [1.0]*n_clients if mode == 'federated' else [1.0]
+rs = [0.25,0.9]
+client_rss = generate_lists(rs[0], rs[1], n_clients)
+rs_names = [rs[0],'hetero',rs[1]]
 
-nn_ct = len(Ts)*len(taus)
+nn_ct = len(Ts)*len(taus)*len(client_rss)
 
 # 初始化结果存储字典（使用defaultdict自动创建嵌套结构）
 cvgdict = {}
@@ -40,21 +42,26 @@ for T in Ts:
     cvgdict[T] = {};maedict[T] = {}
     for tau in taus:
         # 初始化当前分位数的字典层级
-        t1 = time.time()
-        fed_results = run_federated_simulation(
-            dist_type=dist_type,tau=tau,
-            client_rs=client_rs,n_clients=n_clients,
-            T=T,E_typ='cons',E_cons=1,gene_process=gene_process,mode=mode,
-            n_sim=n_sim,base_seed=seed)
-        # 分析结果
-        output = analyze_results(fed_results,z_score=6.74735)
-        cvg = output['coverage'];mae = output['mae']
-
-        # 存储结果
-        cvgdict[T][tau] = cvg;maedict[T][tau] = mae
-        t2 = time.time()
-        ct += 1
-        save_pickle(cvgdict, f'./case_{mode}_{gene_process}_cvg.pkl');save_pickle(maedict, f'./case_{mode}_{gene_process}_mae.pkl')
-        print(f'Ts:{T} tau:{tau} TC:{(t2-t1)/60:.2f}min LTC:{(t2-t1)*(nn_ct-ct)/60:.2f}min')
-                
+        cvgdict[T][tau] = {};maedict[T][tau] = {}
+        for name_idx, client_rs in enumerate(client_rss):
+            name = rs_names[name_idx]
+            cvgdict[T][tau][name] = {};maedict[T][tau][name] = {}
+        
+            t1 = time.time()
+            fed_results = run_federated_simulation(
+                dist_type=dist_type,tau=tau,
+                client_rs=client_rs,n_clients=n_clients,
+                T=T,E_typ='cons',E_cons=1,gene_process=gene_process,mode=mode,
+                n_sim=n_sim,base_seed=seed,a=0.51, b=100,c=20)
+            # 分析结果
+            output = analyze_results(fed_results,z_score=6.74735)
+            cvg = output['coverage'];mae = output['mae']
+    
+            # 存储结果
+            cvgdict[T][tau][name] = cvg;maedict[T][tau][name] = mae
+            t2 = time.time()
+            ct += 1
+            save_pickle(cvgdict, f'./case_{mode}_{gene_process}_cvg.pkl');save_pickle(maedict, f'./case_{mode}_{gene_process}_mae.pkl')
+            print(f'Ts:{T} tau:{tau} TC:{(t2-t1)/60:.2f}min LTC:{(t2-t1)*(nn_ct-ct)/60:.2f}min')
+                    
 ray.shutdown()

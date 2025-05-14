@@ -15,12 +15,12 @@ def generate_lists(start, end, K):
 ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
 
 
-gene_process = 'hete_d' # 分布和响应r均异质
+gene_process = 'hete' # 分布和响应r均异质
 mode='federated'
 n_sim = 1000
 seed = 2025
 
-Ts = [5000,50000]
+Ts = [10000, 50000]
 # Ts = [5000]
 # taus = [0.3,0.5,0.8]
 taus = [0.5]

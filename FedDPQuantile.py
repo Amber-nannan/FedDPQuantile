@@ -4,13 +4,10 @@ from DPQuantile import DPQuantile
 class FedDPQuantile(DPQuantile):
     """联邦差分隐私分位数估计"""
     
-    def __init__(self, n_clients=1, pk=None, client_rs=None, a=0.51, b=100,c=2,**kwargs):
+    def __init__(self, n_clients=1, pk=None, client_rs=None,**kwargs):
         super().__init__(**kwargs)
         self.n_clients = n_clients
         self.pk_init = pk
-        self.a = a
-        self.b = b
-        self.c0 = c
         
         # 处理客户端隐私参数
         self.client_rs = client_rs if client_rs else [self.r] * n_clients
