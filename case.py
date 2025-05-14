@@ -25,8 +25,8 @@ Ts = [5000,50000]
 # Ts = [5000]
 taus = [0.3,0.5,0.8]
 # taus = [0.5]
-# rs = [0.25,0.9]
-rs = [0.25]
+rs = [0.25,0.9]
+# rs = [0.25]
 
 n_clients = 10
 client_rss = [[rs[i]]*n_clients for i in range(len(rs))]
@@ -42,13 +42,22 @@ cvgdict = {}
 maedict = {}
 
 # key=(r,E), value=(a,b,c)
+# abc_dict = {
+#     (0.25, 1):(0.501, 0, 2), 
+#     (0.25, 5):(0.546, 0, 1), 
+#     (0.25, 'log'):(0.546, 0, 1), 
+#     (0.9, 1): (0.568, 0, 1),
+#     (0.9, 5): (0.568, 0, 1),
+#     (0.9, 'log'): (0.782, 25, 2),
+# }
+
 abc_dict = {
-    (0.25, 1):(0.501, 0, 2), 
-    (0.25, 5):(0.546, 0, 1), 
-    (0.25, 'log'):(0.546, 0, 1), 
-    (0.9, 1): (0.568, 0, 1),
-    (0.9, 5): (0.568, 0, 1),
-    (0.9, 'log'): (0.782, 25, 2),
+    (0.25, 1):(0.51, 100, 20), 
+    (0.25, 5):(0.51, 100, 20), 
+    (0.25, 'log'):(0.51, 100, 20), 
+    (0.9, 1): (0.51, 100, 20),
+    (0.9, 5): (0.51, 100, 20),
+    (0.9, 'log'): (0.51, 100, 20),
 }
 
 # 联邦模拟
@@ -92,8 +101,8 @@ for T in Ts:
                 maedict[T][tau][name][E] = mae
                 t2 = time.time()
                 ct += 1
-                save_pickle(cvgdict, f'./case_rs_{mode}_{gene_process}_cvg.pkl')
-                save_pickle(maedict, f'./case_rs_{mode}_{gene_process}_mae.pkl')
+                save_pickle(cvgdict, f'./case_{mode}_{gene_process}_cvg.pkl')
+                save_pickle(maedict, f'./case_{mode}_{gene_process}_mae.pkl')
                 print(f'Ts:{T} tau:{tau} name:{name} E:{E} TC:{(t2-t1)/60:.2f}min LTC:{(t2-t1)*(nn_ct-ct)/60:.2f}min')
                 
 ray.shutdown()

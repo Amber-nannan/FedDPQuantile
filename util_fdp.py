@@ -116,7 +116,7 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
     参数:
         mode: 'federated'（联邦训练）或 'global'（全局训练）
     """
-    np.random.seed(seed)
+    np.random.seed(2025)
     # mus = np.random.randn(n_clients) if gene_process == 'hete' else np.zeros(n_clients)
     if gene_process == 'hete':
         mus = np.random.randn(n_clients)
