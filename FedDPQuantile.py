@@ -4,16 +4,14 @@ from DPQuantile import DPQuantile
 class FedDPQuantile(DPQuantile):
     """联邦差分隐私分位数估计"""
     
-    def __init__(self, n_clients=1, pk=None, client_rs=None, a=0.51, b=100,c=2,seed=2025,**kwargs):
+    def __init__(self, n_clients=1, pk=None, client_rs=None,
+                 taus = None, **kwargs):
         super().__init__(**kwargs)
         self.n_clients = n_clients
         self.pk_init = pk
-        self.a = a
-        self.b = b
-        self.c0 = c
-        self.seed = seed
         
         # 处理客户端隐私参数
+        self.taus = taus if taus else [self.tau] * n_clients
         self.client_rs = client_rs if client_rs else [self.r] * n_clients
         if len(self.client_rs) != n_clients:
             raise ValueError("client_rs长度必须与n_clients一致")
@@ -34,7 +32,8 @@ class FedDPQuantile(DPQuantile):
 
     def _create_client(self, client_idx):
         """创建客户端实例（带独立隐私参数）"""
-        return DPQuantile(tau=self.tau, r=self.client_rs[client_idx],
+        tau_avg = np.sum(self.taus)
+        return DPQuantile(tau=tau_avg, r=self.client_rs[client_idx],
                           true_q=self.true_q,
                          use_true_q_init=self.use_true_q_init)
 

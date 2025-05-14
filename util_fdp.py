@@ -4,22 +4,23 @@ import time
 sys.path.append('..')
 from util import *
 from FedDPQuantile import FedDPQuantile
+from DPQuantile import DPQuantile
 import pickle
 import os
 from scipy.stats import norm
 from scipy.optimize import root_scalar
 
-def objective(x, mu_list, tau):
+def objective(x, mu_list, taus):
     """全局目标函数：计算 (1/K) * sum(Φ(x - μ_k)) - τ （σ=1）"""
-    return np.mean(norm.cdf(x - np.asarray(mu_list))) - tau    # 这里隐藏的设定：（1）每一台机器的数据都是正态分布 （2）每一台机器权重相同
+    return np.mean(norm.cdf(x - np.asarray(mu_list))) - np.mean(taus)    # 这里隐藏的设定：（1）每一台机器的数据都是正态分布 （2）每一台机器权重相同
 
-def solve_quantile(mu_list, tau, xtol=1e-8):
+def solve_quantile(mu_list, taus, xtol=1e-8):
     """求解方程：(1/K) * sum(Φ(x - μ_k)) = τ （σ=1，权重均匀）"""
     # 确定搜索区间（覆盖99.99994%概率范围）
     mu_min, mu_max = np.min(mu_list), np.max(mu_list)
     bracket = (mu_min - 5, mu_max + 5)
     # 通过lambda绑定参数调用外部目标函数
-    result = root_scalar(lambda x: objective(x, mu_list, tau),
+    result = root_scalar(lambda x: objective(x, mu_list, taus),
                          method='bisect',bracket=bracket,xtol=xtol)
     return result.root
 
@@ -105,7 +106,7 @@ def load_pickle(file_path):
         return pickle.load(f)
 
 
-def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
+def train(seed, dist_type, taus, client_rs, n_clients, T, E_typ='log', E_cons=1,
           gene_process='homo', mode='federated', use_true_q_init=False, a=0.51, b=100,c=2, T_mode='rounds'):
     """
     单次联邦实验（合并全局训练和联邦训练版本）
@@ -129,9 +130,9 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
     # if gene_process in ['homo', 'hete']:
     if gene_process != 'hete_d':
         for k in range(n_clients):
-            data, _ = generate_data(dist_type, tau, ET, mu=mus[k])    # ET个sample
+            data, _ = generate_data(dist_type, taus[k], ET, mu=mus[k])    # ET个sample
             clients_data.append(data)
-        global_true_q = solve_quantile(mus, tau)
+        global_true_q = solve_quantile(mus, taus)
 
     elif gene_process == 'hete_d':
         # 三种分布类型：normal, uniform, cauchy
@@ -148,7 +149,7 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
         
         # 为每个客户端生成对应分布的数据
         for k in range(n_clients):
-            data, _ = generate_data(dist_list[k], tau, ET, mu=mus[k])
+            data, _ = generate_data(dist_list[k], taus[k], ET, mu=mus[k])
             clients_data.append(data)
 
         global_true_q = 0.0 # 只能接受中位数
@@ -156,33 +157,37 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
     # 根据模式选择数据处理方式
     if mode == 'global':
         # 全局训练模式：合并数据，n_clients=1
-        _, Em_list = get_Em_list(T*n_clients, typ=E_typ, E_cons=E_cons, T_mode=T_mode)
-        global_data = [np.concatenate(clients_data)]
-        np.random.shuffle(global_data)
-        model = FedDPQuantile(n_clients=1, client_rs=client_rs, tau=tau,
-                              true_q=global_true_q,use_true_q_init=use_true_q_init,a=a, b=b,c=c,seed=seed)
-        model.fit(global_data, Em_list)
+        Q_avgs = []; Vars = []
+        for i,data_i in enumerate(clients_data):
+            model = DPQuantile(tau=taus[i], r=client_rs[i], true_q=global_true_q,a=a, b=b,c=c,seed=seed)
+            model.fit(data_i)
+            Q_avgs.append(model.Q_avg)
+            Vars.append(model.get_variance())
+        return global_true_q, np.mean(Q_avgs), np.mean(Vars), _
+
     elif mode == 'federated':
         # 联邦训练模式：保留客户端数据
-        model = FedDPQuantile(n_clients=n_clients, client_rs=client_rs, tau=tau,
+        model = FedDPQuantile(n_clients=n_clients, client_rs=client_rs,
+                              taus=taus,
                               true_q=global_true_q,use_true_q_init=use_true_q_init,a=a, b=b,c=c,seed=seed)
         model.fit(clients_data, Em_list)
-    return global_true_q, model.Q_avg, model.get_variance(), model.errors
+        return global_true_q, model.Q_avg, model.get_variance(), model.errors
 
 
 @ray.remote
-def train_remote(seed, dist_type, tau, client_rs, n_clients, T, E_typ,
-                 E_cons,gene_process,mode,use_true_q_init=False,a=0.51, b=100,c=2,T_mode='rounds'):
-    return train(seed, dist_type, tau, client_rs, n_clients, T, E_typ,
-                 E_cons,gene_process,mode,use_true_q_init=use_true_q_init,a=a, b=b,c=c,T_mode=T_mode)
+def train_remote(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
+                 E_cons,gene_process,mode,use_true_q_init=False,a=0.51, b=100,c=2):
+    return train(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
+                 E_cons,gene_process,mode,use_true_q_init=use_true_q_init,a=a, b=b,c=c,
+                T_mode=T_mode)
 
 
-def run_federated_simulation(dist_type, tau, client_rs, n_clients, 
+def run_federated_simulation(dist_type, taus, client_rs, n_clients, 
                             T,E_typ, E_cons,gene_process, mode, n_sim,use_true_q_init=False, base_seed=2025,
                             a=0.51, b=100,c=2,T_mode='rounds'):
 
     futures = [train_remote.remote(base_seed + i,
-            dist_type, tau, client_rs, n_clients, T,
+            dist_type, taus, client_rs, n_clients, T,
                                    E_typ, E_cons, gene_process, mode,use_true_q_init=use_true_q_init,
                                    a=a, b=b, c=c, T_mode=T_mode) for i in range(n_sim)]
     results = ray.get(futures)
