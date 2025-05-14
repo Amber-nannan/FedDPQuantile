@@ -23,26 +23,12 @@ def solve_quantile(mu_list, tau, xtol=1e-8):
                          method='bisect',bracket=bracket,xtol=xtol)
     return result.root
 
-# def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1):
-#     """
-#     接收固定的通信次数 T，根据 typ 参数（'log' 或 'cons'）生成每轮的本地迭代次数列表
-#     返回:
-#         总样本量, 迭代次数列表
-#     """
-#     pre = int(T * warm_up)
-#     minor = T - pre
-#     if typ == 'log':
-#         Em = [int(np.ceil(np.log2(m + 1))) for m in range(1, minor + 1)]
-#     elif typ == 'cons':
-#         Em = [E_cons] * minor
-#     return pre + sum(Em), [1] * pre + Em
-
-def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1):
+def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1, T_mode='rounds'):
     """
-    根据总样本量生成通信轮数和每轮的本地迭代次数
+    生成每轮的本地迭代次数列表
     
     参数:
-        total_samples: 总样本量
+        T: 当 T_mode='samples' 时表示总样本量，当 T_mode='rounds' 时表示通信轮数
         warm_up: 预热阶段比例
         typ: 迭代次数类型，'log'或'cons'
         E_cons: 常数迭代次数（当typ='cons'时使用）
@@ -50,51 +36,62 @@ def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1):
     返回:
         总样本量, 迭代次数列表
     """
-    total_samples = T
-    if typ == 'cons':
-        # 对于常数迭代次数，直接计算
-        warm_up_samples = int(total_samples * warm_up)
-        remaining_samples = total_samples - warm_up_samples
-        
-        # 计算需要多少轮常数迭代
-        rounds = remaining_samples // E_cons
-        leftover = remaining_samples % E_cons
-        
-        # 生成迭代次数列表
-        Em_list = [1] * warm_up_samples + [E_cons] * rounds
-        if leftover > 0:
-            Em_list.append(leftover)
+    if T_mode == 'rounds':
+        # 基于通信轮数
+        pre = int(T * warm_up)
+        minor = T - pre
+        if typ == 'log':
+            Em = [int(np.ceil(np.log2(m + 1))) for m in range(1, minor + 1)]
+        elif typ == 'cons':
+            Em = [E_cons] * minor
+        return pre + sum(Em), [1] * pre + Em
+    
+    else:  # T_mode == 'samples' 基于总样本量
+        total_samples = T
+        if typ == 'cons':
+            # 对于常数迭代次数，直接计算
+            warm_up_samples = int(total_samples * warm_up)
+            remaining_samples = total_samples - warm_up_samples
             
-        return total_samples, Em_list
-        
-    elif typ == 'log':
-        # 使用log₂(2), log₂(3), ..., log₂(n)的方式生成迭代次数
-        warm_up_samples = int(total_samples * warm_up)
-        
-        # 计算预热阶段后还剩多少样本量
-        remaining_samples = total_samples - warm_up_samples
-        
-        # 生成对数序列直到总和接近但不超过remaining_samples
-        Em = []
-        n = 2  # 从log₂(2)开始
-        current_sum = 0
-        
-        while True:
-            log_value = int(np.ceil(np.log2(n)))
-            if current_sum + log_value >= remaining_samples:
-                break
+            # 计算需要多少轮常数迭代
+            rounds = remaining_samples // E_cons
+            leftover = remaining_samples % E_cons
             
-            Em.append(log_value)
-            current_sum += log_value
-            n += 1
-        
-        # 特殊处理：调整最后一个元素使总和恰好等于total_samples
-        if current_sum < remaining_samples:
-            Em.append(remaining_samples - current_sum)
-        
-        # 生成最终的迭代次数列表
-        Em_list = [1] * warm_up_samples + Em
-        return total_samples, Em_list
+            # 生成迭代次数列表
+            Em_list = [1] * warm_up_samples + [E_cons] * rounds
+            if leftover > 0:
+                Em_list.append(leftover)
+                
+            return total_samples, Em_list
+            
+        elif typ == 'log':
+            # 使用log₂(2), log₂(3), ..., log₂(n)的方式生成迭代次数
+            warm_up_samples = int(total_samples * warm_up)
+            
+            # 计算预热阶段后还剩多少样本量
+            remaining_samples = total_samples - warm_up_samples
+            
+            # 生成对数序列直到总和接近但不超过remaining_samples
+            Em = []
+            n = 2  # 从log₂(2)开始
+            current_sum = 0
+            
+            while True:
+                log_value = int(np.ceil(np.log2(n)))
+                if current_sum + log_value >= remaining_samples:
+                    break
+                
+                Em.append(log_value)
+                current_sum += log_value
+                n += 1
+            
+            # 特殊处理：调整最后一个元素使总和恰好等于total_samples
+            if current_sum < remaining_samples:
+                Em.append(remaining_samples - current_sum)
+            
+            # 生成最终的迭代次数列表
+            Em_list = [1] * warm_up_samples + Em
+            return total_samples, Em_list
 
 def save_pickle(var, file_path):
     """保存变量到pickle文件"""
@@ -109,14 +106,15 @@ def load_pickle(file_path):
 
 
 def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
-          gene_process='homo', mode='federated', use_true_q_init=False, a=0.51, b=100,c=2):
+          gene_process='homo', mode='federated', use_true_q_init=False, a=0.51, b=100,c=2, T_mode='rounds'):
     """
     单次联邦实验（合并全局训练和联邦训练版本）
     
     参数:
         mode: 'federated'（联邦训练）或 'global'（全局训练）
+        T_mode: 'rounds'（基于通信轮数）或 'samples'（基于总样本量）
     """
-    np.random.seed(2025)
+    np.random.seed(42)
     # mus = np.random.randn(n_clients) if gene_process == 'hete' else np.zeros(n_clients)
     if gene_process == 'hete':
         mus = np.random.randn(n_clients)
@@ -126,7 +124,7 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
         mus = np.random.normal(loc=0,scale=gene_process,size=n_clients)
         
     clients_data = []
-    ET, Em_list = get_Em_list(T, typ=E_typ, E_cons=E_cons)
+    ET, Em_list = get_Em_list(T, typ=E_typ, E_cons=E_cons, T_mode=T_mode)
 
     # if gene_process in ['homo', 'hete']:
     if gene_process != 'hete_d':
@@ -158,7 +156,7 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
     # 根据模式选择数据处理方式
     if mode == 'global':
         # 全局训练模式：合并数据，n_clients=1
-        _, Em_list = get_Em_list(T*n_clients, typ=E_typ, E_cons=E_cons)
+        _, Em_list = get_Em_list(T*n_clients, typ=E_typ, E_cons=E_cons, T_mode=T_mode)
         global_data = [np.concatenate(clients_data)]
         np.random.shuffle(global_data)
         model = FedDPQuantile(n_clients=1, client_rs=client_rs, tau=tau,
@@ -174,18 +172,18 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
 
 @ray.remote
 def train_remote(seed, dist_type, tau, client_rs, n_clients, T, E_typ,
-                 E_cons,gene_process,mode,use_true_q_init=False,a=0.51, b=100,c=2):
+                 E_cons,gene_process,mode,use_true_q_init=False,a=0.51, b=100,c=2,T_mode='rounds'):
     return train(seed, dist_type, tau, client_rs, n_clients, T, E_typ,
-                 E_cons,gene_process,mode,use_true_q_init=use_true_q_init,a=a, b=b,c=c)
+                 E_cons,gene_process,mode,use_true_q_init=use_true_q_init,a=a, b=b,c=c,T_mode=T_mode)
 
 
 def run_federated_simulation(dist_type, tau, client_rs, n_clients, 
                             T,E_typ, E_cons,gene_process, mode, n_sim,use_true_q_init=False, base_seed=2025,
-                            a=0.51, b=100,c=2):
+                            a=0.51, b=100,c=2,T_mode='rounds'):
 
     futures = [train_remote.remote(base_seed + i,
             dist_type, tau, client_rs, n_clients, T,
                                    E_typ, E_cons, gene_process, mode,use_true_q_init=use_true_q_init,
-                                   a=a, b=b, c=c) for i in range(n_sim)]
+                                   a=a, b=b, c=c, T_mode=T_mode) for i in range(n_sim)]
     results = ray.get(futures)
     return package_results(results)
