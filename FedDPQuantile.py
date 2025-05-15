@@ -5,20 +5,19 @@ class FedDPQuantile(DPQuantile):
     """联邦差分隐私分位数估计"""
     
     def __init__(self, n_clients=1, pk=None, client_rs=None,
-                 taus = None, **kwargs):
+                 taus=0.5, **kwargs):
         super().__init__(**kwargs)
         self.n_clients = n_clients
         self.pk_init = pk
-        self.a = a
-        self.b = b
-        self.c0 = c
-        self.seed = seed
         self.global_q_avg_history = {}    # 添加全局统计量历史记录
         self.global_variance_history = {}
         
         # 处理客户端隐私参数
-        self.taus = taus if taus else [self.tau] * n_clients
-        self.client_rs = client_rs if client_rs else [self.r] * n_clients
+        self.taus = [taus] * n_clients if isinstance(taus, (int, float)) else taus
+        self.client_rs = ([self.r] * n_clients if client_rs is None
+                     else [self.r] * n_clients if isinstance(client_rs, (int, float))
+                     else client_rs)
+        
         if len(self.client_rs) != n_clients:
             raise ValueError("client_rs长度必须与n_clients一致")
         self.clients = [self._create_client(i) for i in range(self.n_clients)]

@@ -6,23 +6,18 @@ import ray
 main code 分布和响应r均异质，此时我们只能考虑中位数
 """
 
-def generate_lists(start, end, K):
-    list_start = [start] * K
-    list_avg = np.linspace(start, end, K).tolist()
-    list_end = [end] * K
-    return list_start, list_avg, list_end
-
 ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
 
 
-gene_process = 'hete' # 分布和响应r均异质
-mode='federated'
+os.makedirs("output", exist_ok=True)
+dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
+gene_process = 'hete_d' # homo / 'hete' / 'hete_d'
+mode='federated' # federated / global
+T_mode='rounds'  # samples / rounds
 n_sim = 1000
 seed = 2025
 
-Ts = [10000, 50000]
-# Ts = [5000]
-# taus = [0.3,0.5,0.8]
+Ts = [10000, 50000] if T_mode == 'samples' else [5000,50000]
 taus = [0.5]
 rs = [0.25,0.9]
 
@@ -31,8 +26,6 @@ rs = [0.25,0.9]
 n_clients = 10
 client_rss = generate_lists(rs[0], rs[1], n_clients)
 rs_names = [rs[0],'hetero',rs[1]]
-# client_rss = [generate_lists(rs[0], rs[0], n_clients)[0]]
-# rs_names = [rs[0]]
 
 Es = [1,5,'log']
 nn_ct = len(Ts)*len(taus)*len(client_rss)*len(Es)
@@ -56,10 +49,11 @@ for T in Ts:
                 E_typ = 'log' if E == 'log' else 'cons'
                 t1 = time.time()
                 fed_results = run_federated_simulation(
-                    dist_type=None,tau=tau,
+                    dist_type=None,taus=tau,
                     client_rs=client_rs,n_clients=n_clients,
                     T=T,E_typ=E_typ,E_cons=E,gene_process=gene_process,
                     mode=mode,
+                    T_mode=T_mode,
                     n_sim=n_sim,base_seed=seed,a=0.51, b=100,c=20)
                 # 分析结果
                 z_score = 6.753 if E == 'log' else 6.74735
@@ -70,8 +64,8 @@ for T in Ts:
                 cvgdict[T][tau][name][E] = cvg;maedict[T][tau][name][E] = mae
                 t2 = time.time()
                 ct += 1
-                save_pickle(cvgdict, f'./case_2_{mode}_{gene_process}_cvg.pkl')
-                save_pickle(maedict, f'./case_2_{mode}_{gene_process}_mae.pkl')
+                save_pickle(cvgdict, f'output/case_{mode}_{T_mode}_{gene_process}_cvg.pkl')
+                save_pickle(maedict, f'output/case_{mode}_{T_mode}_{gene_process}_mae.pkl')
                 print(f'Ts:{T} tau:{tau} name:{name} E:{E} TC:{(t2-t1)/60:.2f}min LTC:{(t2-t1)*(nn_ct-ct)/60:.2f}min')
                 
 ray.shutdown()

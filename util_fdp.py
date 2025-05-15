@@ -10,6 +10,12 @@ import os
 from scipy.stats import norm
 from scipy.optimize import root_scalar
 
+def generate_lists(start, end, K):
+    list_start = [start] * K
+    list_avg = np.linspace(start, end, K).tolist()
+    list_end = [end] * K
+    return list_start, list_avg, list_end
+
 def objective(x, mu_list, taus):
     """全局目标函数：计算 (1/K) * sum(Φ(x - μ_k)) - τ （σ=1）"""
     return np.mean(norm.cdf(x - np.asarray(mu_list))) - np.mean(taus)    # 这里隐藏的设定：（1）每一台机器的数据都是正态分布 （2）每一台机器权重相同
@@ -106,9 +112,9 @@ def load_pickle(file_path):
         return pickle.load(f)
 
 
-def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
+def train(seed, dist_type, taus, client_rs, n_clients, T, E_typ='log', E_cons=1,
           gene_process='homo', mode='federated', use_true_q_init=False, a=0.51, b=100,c=2,
-          return_history=False):
+          return_history=False,T_mode='rounds'):
     """
     单次联邦实验（合并全局训练和联邦训练版本）
     
@@ -116,6 +122,7 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
         mode: 'federated'（联邦训练）或 'global'（全局训练）
         T_mode: 'rounds'（基于通信轮数）或 'samples'（基于总样本量）
     """
+    taus = [taus] * n_clients if isinstance(taus, (int, float)) else taus
     np.random.seed(42)
     # mus = np.random.randn(n_clients) if gene_process == 'hete' else np.zeros(n_clients)
     if gene_process == 'hete':
@@ -181,7 +188,8 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
 
 @ray.remote
 def train_remote(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
-                 E_cons,gene_process,mode,use_true_q_init=False,a=0.51, b=100,c=2,T_mode='rounds'):
+                 E_cons,gene_process,mode,use_true_q_init=False,a=0.51,
+                 b=100,c=2,T_mode='rounds'):
     return train(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
                  E_cons,gene_process,mode,use_true_q_init=use_true_q_init,a=a, b=b,c=c,
                 T_mode=T_mode)
@@ -200,19 +208,19 @@ def run_federated_simulation(dist_type, taus, client_rs, n_clients,
 
 
 @ray.remote
-def train_history_remote(seed, dist_type, tau, client_rs, n_clients, T, E_typ,
+def train_history_remote(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
                  E_cons, gene_process, mode, use_true_q_init=False, 
                  a=0.51, b=100, c=2, return_history=True,T_mode='rounds'):
-    return train(seed, dist_type, tau, client_rs, n_clients, T, E_typ,
+    return train(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
                  E_cons, gene_process, mode, use_true_q_init=use_true_q_init,
                  a=a, b=b, c=c, return_history=return_history, T_mode=T_mode)
 
-def run_federated_trajectory(dist_type, tau, client_rs, n_clients, 
+def run_federated_trajectory(dist_type, taus, client_rs, n_clients, 
                             T, E_typ, E_cons, gene_process, mode, use_true_q_init=False, base_seed=2025,
                             a=0.51, b=100, c=2,T_mode='rounds'):
     """运行单次联邦训练，固定 return_history=True，返回训练轨迹"""
     
-    future = train_history_remote.remote(base_seed, dist_type, tau, client_rs, n_clients, T, E_typ,
+    future = train_history_remote.remote(base_seed, dist_type, taus, client_rs, n_clients, T, E_typ,
                 E_cons, gene_process, mode, use_true_q_init=use_true_q_init,
                 a=a, b=b, c=c, return_history=True, T_mode=T_mode)
     result = ray.get(future)
