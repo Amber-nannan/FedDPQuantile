@@ -165,13 +165,17 @@ def train(seed, dist_type, taus, client_rs, n_clients, T, E_typ='log', E_cons=1,
     # 根据模式选择数据处理方式
     if mode == 'global':
         # 全局训练模式：合并数据，n_clients=1
-        Q_avgs = []; Vars = []
+        Q_avgs = []; Vars = []; History = {}
         for i,data_i in enumerate(clients_data):
             model = DPQuantile(tau=taus[i], r=client_rs[i], true_q=global_true_q,a=a, b=b,c=c,seed=seed)
             model.fit(data_i)
             Q_avgs.append(model.Q_avg)
             Vars.append(model.get_variance())
-        return global_true_q, np.mean(Q_avgs), np.mean(Vars), _
+            History[i]=model.get_stats_history()
+        if return_history:
+            return global_true_q, History
+        else:
+            return global_true_q, np.mean(Q_avgs), np.mean(Vars), _
 
     elif mode == 'federated':
         # 联邦训练模式：保留客户端数据

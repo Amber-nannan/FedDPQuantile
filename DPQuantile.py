@@ -16,6 +16,7 @@ class DPQuantile:
         self.burn_in_ratio = burn_in_ratio
         self.use_true_q_init = use_true_q_init  # 新增参数
         self.q_avg_history = {}  # 记录每次更新的Q_avg
+        self.variance_history = {}  # 记录每次更新的var
         self.a = a
         self.b = b
         self.c0 = c
@@ -70,8 +71,6 @@ class DPQuantile:
         prev_weight = (self.n - 1) / self.n
         self.Q_avg = prev_weight * self.Q_avg + self.q_est / self.n
         
-        # 记录当前样本数量对应的Q_avg
-        self.q_avg_history[self.n] = self.Q_avg
         
         # 更新方差统计量
         term = self.n**2
@@ -79,6 +78,10 @@ class DPQuantile:
         self.v_b += term * self.Q_avg
         self.v_q += term
         self.v_s += 1
+
+        # 记录当前样本数量对应的Q_avg
+        self.q_avg_history[self.n] = self.Q_avg
+        self.variance_history[self.n] = self.get_variance()
         
         if self.track_history and self.true_q is not None:
             self.errors.append(np.abs(self.Q_avg - self.true_q))
@@ -104,6 +107,13 @@ class DPQuantile:
             # 提前终止检查
             if self.step >= n_samples:
                 break
+
+    def get_stats_history(self):
+        stats = {
+            "q_avg": self.q_avg_history,
+            "variance": self.variance_history
+        }
+        return stats
 
     def get_variance(self):
         """获取方差估计"""
