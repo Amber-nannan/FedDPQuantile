@@ -181,7 +181,7 @@ def train(seed, dist_type, tau, client_rs, n_clients, T, E_typ='log', E_cons=1,
 
 @ray.remote
 def train_remote(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
-                 E_cons,gene_process,mode,use_true_q_init=False,a=0.51, b=100,c=2):
+                 E_cons,gene_process,mode,use_true_q_init=False,a=0.51, b=100,c=2, T_mode='rounds'):
     return train(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
                  E_cons,gene_process,mode,use_true_q_init=use_true_q_init,a=a, b=b,c=c,
                 T_mode=T_mode)
@@ -201,17 +201,19 @@ def run_federated_simulation(dist_type, taus, client_rs, n_clients,
 
 @ray.remote
 def train_history_remote(seed, dist_type, tau, client_rs, n_clients, T, E_typ,
-                 E_cons, gene_process, mode, use_true_q_init=False, a=0.51, b=100, c=2, return_history=True):
+                 E_cons, gene_process, mode, use_true_q_init=False, 
+                 a=0.51, b=100, c=2, return_history=True,T_mode='rounds'):
     return train(seed, dist_type, tau, client_rs, n_clients, T, E_typ,
-                 E_cons, gene_process, mode, use_true_q_init=use_true_q_init, a=a, b=b, c=c, return_history=return_history)
+                 E_cons, gene_process, mode, use_true_q_init=use_true_q_init,
+                 a=a, b=b, c=c, return_history=return_history, T_mode=T_mode)
 
 def run_federated_trajectory(dist_type, tau, client_rs, n_clients, 
                             T, E_typ, E_cons, gene_process, mode, use_true_q_init=False, base_seed=2025,
-                            a=0.51, b=100, c=2):
-    """运行单次联邦训练，返回训练轨迹"""
+                            a=0.51, b=100, c=2,T_mode='rounds'):
+    """运行单次联邦训练，固定 return_history=True，返回训练轨迹"""
     
     future = train_history_remote.remote(base_seed, dist_type, tau, client_rs, n_clients, T, E_typ,
                 E_cons, gene_process, mode, use_true_q_init=use_true_q_init,
-                a=a, b=b, c=c, return_history=True)
+                a=a, b=b, c=c, return_history=True, T_mode=T_mode)
     result = ray.get(future)
     return result
