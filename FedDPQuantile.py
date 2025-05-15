@@ -32,7 +32,7 @@ class FedDPQuantile(DPQuantile):
 
     def _create_client(self, client_idx):
         """创建客户端实例（带独立隐私参数）"""
-        tau_avg = np.sum(self.taus)
+        tau_avg = np.mean(self.taus)
         return DPQuantile(tau=tau_avg, r=self.client_rs[client_idx],
                           true_q=self.true_q,
                          use_true_q_init=self.use_true_q_init)

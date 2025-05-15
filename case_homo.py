@@ -18,12 +18,13 @@ dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
 gene_process = 'homo'
 # gene_process = 'hete'
 mode='federated'
+T_mode='samples'
 n_sim = 1000
 seed = 42
 
 # Ts = [5000,10000,20000,50000]
 Ts = [10000, 50000]
-tauss = [[0.5]*10, [0.25]*4 + [0.5]*2 + [0.75]*4, np.linspace(0.3,0.7,10)]
+tauss = [[0.5]*10, [0.25]*4 + [0.5]*2 + [0.75]*4, np.linspace(0.3, 0.7, 10).tolist()]
 # taus = [0.5]
 rs = [0.25,0.9]
 
@@ -58,7 +59,8 @@ for T in Ts:
                     client_rs=client_rs,n_clients=n_clients,
                     T=T,E_typ=E_typ,E_cons=E,gene_process=gene_process,
                     mode=mode,
-                    n_sim=n_sim,base_seed=seed,a=0.51, b=100,c=20)
+                    n_sim=n_sim,base_seed=seed,a=0.51, b=100,c=20,
+                T_mode=T_mode)
                 # 分析结果
                 z_score = 6.753 if E == 'log' else 6.74735
                 output = analyze_results(fed_results,z_score=z_score)

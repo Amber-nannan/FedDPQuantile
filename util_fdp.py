@@ -176,7 +176,7 @@ def train(seed, dist_type, taus, client_rs, n_clients, T, E_typ='log', E_cons=1,
 
 @ray.remote
 def train_remote(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
-                 E_cons,gene_process,mode,use_true_q_init=False,a=0.51, b=100,c=2):
+                 E_cons,gene_process,mode,use_true_q_init=False,a=0.51, b=100,c=2,T_mode='rounds'):
     return train(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
                  E_cons,gene_process,mode,use_true_q_init=use_true_q_init,a=a, b=b,c=c,
                 T_mode=T_mode)
