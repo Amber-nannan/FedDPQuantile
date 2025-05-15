@@ -8,10 +8,10 @@ main code 同分布，但响应可能不同
 ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
 os.makedirs("output", exist_ok=True)
 
-dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
+dist_type = 'cauchy'   # types = ['normal', 'uniform', 'cauchy']
 gene_process = 'homo' # 'hete' / 'hete_d'
 mode='federated' # federated / global
-T_mode='rounds'  # samples / rounds
+T_mode='samples'  # samples / rounds
 n_sim = 1000
 seed = 42
 
@@ -64,8 +64,8 @@ for T in Ts:
                 cvgdict[T][i][name][E] = cvg;maedict[T][i][name][E] = mae
                 t2 = time.time()
                 ct += 1
-                save_pickle(cvgdict, f'output/case_{mode}_{T_mode}_{gene_process}_cvg.pkl')
-                save_pickle(maedict, f'output/case_{mode}_{T_mode}_{gene_process}_mae.pkl')
+                save_pickle(cvgdict, f'output/case_{dist_type}_{mode}_{T_mode}_{gene_process}_cvg.pkl')
+                save_pickle(maedict, f'output/case_{dist_type}_{mode}_{T_mode}_{gene_process}_mae.pkl')
                 print(f'Ts:{T} taus:{taus} name:{name} E:{E} TC:{(t2-t1)/60:.2f}min LTC:{(t2-t1)*(nn_ct-ct)/60:.2f}min')
                 
 ray.shutdown()

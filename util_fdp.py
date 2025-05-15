@@ -62,8 +62,11 @@ def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1, T_mode='rounds'):
             raise ValueError("typ must be 'log', 'cons', or a float in (0,1].")
         return pre + sum(Em), [1] * pre + Em
     
-    else:  # T_mode == 'samples' 基于总样本量
-        total_samples = T
+    elif T_mode == 'samples':  # T_mode == 'samples' 基于总样本量
+        total_samples   = T
+        warm_up_samples = int(total_samples * warm_up)
+        remaining       = total_samples - warm_up_samples
+
         if typ == 'cons':
             rounds, leftover = divmod(remaining, E_cons)
             Em_list = [1]*warm_up_samples + [E_cons]*rounds

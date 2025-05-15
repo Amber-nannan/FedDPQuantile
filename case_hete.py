@@ -11,7 +11,7 @@ os.makedirs("output", exist_ok=True)
 dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
 gene_process = 'hete' # homo / 'hete' / 'hete_d'
 mode='federated' # federated / global
-T_mode='samples'  # samples / rounds
+T_mode='rounds'  # samples / rounds
 n_sim = 1000
 seed = 2025
 
@@ -31,15 +31,14 @@ cvgdict = {}
 maedict = {}
 
 # key=(r,E), value=(a,b,c)
-# abc_dict = {
-#     (0.25, 1):(0.51, 100, 20), 
-#     (0.25, 5):(0.51, 100, 20), 
-#     (0.25, 'log'):(0.51, 100, 20), 
-#     (0.9, 1): (0.51, 100, 20),
-#     (0.9, 5): (0.568, 0, 1),
-#     (0.9, 'log'): (0.782, 25, 2),
-# }
 abc_dict = {
+    (0.25, 1):(0.51, 100, 20), 
+    (0.25, 5):(0.51, 100, 20), 
+    (0.25, 'log'):(0.51, 100, 20), 
+    (0.9, 1): (0.51, 100, 20),
+    (0.9, 5): (0.568, 0, 1),
+    (0.9, 'log'): (0.782, 25, 2),
+} if T_mode == 'rounds' else {
     (0.25, 1):(0.51, 100, 20), 
     (0.25, 5):(0.51, 100, 20), 
     (0.25, 'log'):(0.51, 100, 20), 
