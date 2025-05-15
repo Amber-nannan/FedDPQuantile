@@ -9,6 +9,7 @@ import pickle
 import os
 from scipy.stats import norm
 from scipy.optimize import root_scalar
+import math
 
 def generate_lists(start, end, K):
     list_start = [start] * K
