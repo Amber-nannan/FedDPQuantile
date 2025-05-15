@@ -11,12 +11,13 @@ os.makedirs("output", exist_ok=True)
 dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
 gene_process = 'homo' # 'hete' / 'hete_d'
 mode='federated' # federated / global
-T_mode='sapmles'  # samples / rounds
+T_mode='samples'  # samples / rounds
 n_sim = 1000
 seed = 42
 
 Ts = [10000, 50000] if T_mode == 'samples' else [5000,50000]
-tauss = [[0.5]*10, [0.25]*4 + [0.5]*2 + [0.75]*4, np.linspace(0.3, 0.7, 10).tolist()]
+tauss = [[0.5]*10,np.linspace(0.3, 0.5, 10).tolist(),
+        np.linspace(0.5, 0.8, 10).tolist()]
 rs = [0.25,0.9]
 
 n_clients = 10

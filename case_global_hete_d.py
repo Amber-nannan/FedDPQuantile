@@ -8,7 +8,7 @@ main code 全局结果
 ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
 os.makedirs("output", exist_ok=True)
 dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
-gene_process = 'homo' # 'hete' / 'hete_d'
+gene_process = 'hete_d' # 'homo /hete' / 'hete_d'
 mode='global'
 T_mode='samples'  # samples / rounds
 n_sim = 1000
