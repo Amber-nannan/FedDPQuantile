@@ -61,7 +61,7 @@ def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1, T_mode='rounds'):
             Em_minor = _gen_power_seq(typ, minor)
         else:
             raise ValueError("typ must be 'log', 'cons', or a float in (0,1].")
-        return pre + sum(Em), [1] * pre + Em
+        return pre + sum(Em_minor), [1] * pre + Em_minor
     
     elif T_mode == 'samples':  # T_mode == 'samples' 基于总样本量
         total_samples   = T

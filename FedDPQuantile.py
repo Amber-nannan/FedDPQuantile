@@ -80,7 +80,8 @@ class FedDPQuantile(DPQuantile):
                 for x in batch:
                     delta = client._compute_gradient(x)
                     lr = self._lr_schedule(m_prime + 1,c0=self.c0,a=self.a,b=self.b) 
-                    client._update_estimator(delta, lr/Em)
+                    # client._update_estimator(delta, lr/Em)
+                    client._update_estimator(delta, lr)
                     client._update_stats()
                 
                 client_params.append(client.q_est)
