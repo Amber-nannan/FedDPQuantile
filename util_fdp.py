@@ -30,6 +30,10 @@ def solve_quantile(mu_list, taus, xtol=1e-8):
                          method='bisect',bracket=bracket,xtol=xtol)
     return result.root
 
+def _gen_power_seq(alpha, max_len):
+    """生成 [⌈1^α⌉, ⌈2^α⌉, …, ⌈max_len^α⌉]"""
+    return [int(math.ceil((i+1)**alpha)) for i in range(max_len)]
+
 def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1, T_mode='rounds'):
     """
     生成每轮的本地迭代次数列表
@@ -48,57 +52,46 @@ def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1, T_mode='rounds'):
         pre = int(T * warm_up)
         minor = T - pre
         if typ == 'log':
-            Em = [int(np.ceil(np.log2(m + 1))) for m in range(1, minor + 1)]
+            Em_minor = [int(np.ceil(np.log2(m+1))) for m in range(1, minor+1)]
         elif typ == 'cons':
-            Em = [E_cons] * minor
+            Em_minor = [E_cons] * minor
+        elif isinstance(typ, (int, float)) and typ > 0:
+            # 幂次增长
+            Em_minor = _gen_power_seq(typ, minor)
+        else:
+            raise ValueError("typ must be 'log', 'cons', or a float in (0,1].")
         return pre + sum(Em), [1] * pre + Em
     
     else:  # T_mode == 'samples' 基于总样本量
         total_samples = T
         if typ == 'cons':
-            # 对于常数迭代次数，直接计算
-            warm_up_samples = int(total_samples * warm_up)
-            remaining_samples = total_samples - warm_up_samples
-            
-            # 计算需要多少轮常数迭代
-            rounds = remaining_samples // E_cons
-            leftover = remaining_samples % E_cons
-            
-            # 生成迭代次数列表
-            Em_list = [1] * warm_up_samples + [E_cons] * rounds
+            rounds, leftover = divmod(remaining, E_cons)
+            Em_list = [1]*warm_up_samples + [E_cons]*rounds
             if leftover > 0:
                 Em_list.append(leftover)
-                
             return total_samples, Em_list
             
         elif typ == 'log':
-            # 使用log₂(2), log₂(3), ..., log₂(n)的方式生成迭代次数
-            warm_up_samples = int(total_samples * warm_up)
-            
-            # 计算预热阶段后还剩多少样本量
-            remaining_samples = total_samples - warm_up_samples
-            
-            # 生成对数序列直到总和接近但不超过remaining_samples
-            Em = []
-            n = 2  # 从log₂(2)开始
-            current_sum = 0
-            
-            while True:
-                log_value = int(np.ceil(np.log2(n)))
-                if current_sum + log_value >= remaining_samples:
-                    break
-                
-                Em.append(log_value)
-                current_sum += log_value
-                n += 1
-            
-            # 特殊处理：调整最后一个元素使总和恰好等于total_samples
-            if current_sum < remaining_samples:
-                Em.append(remaining_samples - current_sum)
-            
-            # 生成最终的迭代次数列表
-            Em_list = [1] * warm_up_samples + Em
-            return total_samples, Em_list
+            Em, cur, n = [], 0, 2         # 从 log₂(2) 开始
+            while cur + math.ceil(math.log2(n)) < remaining:
+                step = math.ceil(math.log2(n))
+                Em.append(step); cur += step; n += 1
+            if cur < remaining:
+                Em.append(remaining - cur)
+            return total_samples, [1]*warm_up_samples + Em
+
+        elif isinstance(typ, (int, float)) and typ > 0:
+            Em, cur, n = [], 0, 1
+            while cur + math.ceil(n**typ) < remaining:
+                step = math.ceil(n**typ)
+                Em.append(step); cur += step; n += 1
+            if cur < remaining:
+                Em.append(remaining - cur)
+            return total_samples, [1]*warm_up_samples + Em
+        else:
+            raise ValueError("typ must be 'log', 'cons', or a float in (0,1].")
+    else:
+        raise ValueError("T_mode must be 'rounds' or 'samples'.")
 
 def save_pickle(var, file_path):
     """保存变量到pickle文件"""
