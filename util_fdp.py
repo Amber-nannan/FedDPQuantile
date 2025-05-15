@@ -181,7 +181,7 @@ def train(seed, dist_type, taus, client_rs, n_clients, T, E_typ='log', E_cons=1,
         model.fit(clients_data, Em_list)
 
     if return_history:
-        return model.get_stats_history()
+        return global_true_q, model.get_stats_history()
     else:
         return global_true_q, model.Q_avg, model.get_variance(), model.errors
 
