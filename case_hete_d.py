@@ -13,7 +13,7 @@ os.makedirs("output", exist_ok=True)
 dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
 gene_process = 'hete_d' # homo / 'hete' / 'hete_d'
 mode='federated' # federated / global
-T_mode='samples'  # samples / rounds
+T_mode='rounds'  # samples / rounds
 n_sim = 1000
 seed = 2025
 
