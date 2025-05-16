@@ -8,7 +8,7 @@ main code 同分布，但响应可能不同
 ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
 os.makedirs("output", exist_ok=True)
 
-dist_type = 'cauchy'   # types = ['normal', 'uniform', 'cauchy']
+dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
 gene_process = 'homo' # 'hete' / 'hete_d'
 mode='federated' # federated / global
 T_mode='samples'  # samples / rounds

@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import norm, cauchy
+from scipy.stats import norm, cauchy, laplace   # 新增 laplace
 import ray
 
 """
@@ -18,10 +18,14 @@ def generate_data(dist_type, tau, n_samples, mu=0):
     elif dist_type == 'cauchy':
         data = np.random.standard_cauchy(size=n_samples) * 1 + mu  # 位置参数mu的柯西分布
         true_q = mu + cauchy.ppf(tau)             # 分位数平移mu
+    elif dist_type == 'laplace':
+        data = np.random.laplace(loc=mu, scale=1, size=n_samples)  # Laplace(mu, 1)
+        true_q = mu + laplace.ppf(tau)                              # 分位数平移 mu
+    
     else:
-        raise ValueError("不支持的分布类型")
+        raise ValueError("不支持的分布类型。请选择 'normal'、'uniform'、'cauchy' 或 'laplace'")
+    
     return data, true_q
-
 
 def distribute_data(data, n_clients):
     """随机打乱数据并按比例分配到客户端"""
