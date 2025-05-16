@@ -11,4 +11,5 @@ fed_trainable_*/
 .ipynb_checkpoints
 *.tex
 /output
+/history
 core
