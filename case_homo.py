@@ -8,12 +8,13 @@ main code 同分布，但响应可能不同
 ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
 os.makedirs("output", exist_ok=True)
 
-dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
+dist_type = 'cauchy'   # types = ['normal', 'uniform', 'cauchy']
 gene_process = 'homo' # 'hete' / 'hete_d'
 mode='federated' # federated / global
 T_mode='samples'  # samples / rounds
 n_sim = 1000
 seed = 42
+a=0.6;b=0;c=10 # a=0.51, b=100,c=20 for normal
 
 Ts = [10000, 50000] if T_mode == 'samples' else [5000,50000]
 tauss = [[0.5]*10,np.linspace(0.3, 0.5, 10).tolist(),
@@ -53,7 +54,7 @@ for T in Ts:
                     client_rs=client_rs,n_clients=n_clients,
                     T=T,E_typ=E_typ,E_cons=E,gene_process=gene_process,
                     mode=mode,
-                    n_sim=n_sim,base_seed=seed,a=0.51, b=100,c=20,
+                    n_sim=n_sim,base_seed=seed,a=a, b=b,c=c,
                 T_mode=T_mode)
                 # 分析结果
                 z_score = 6.753 if E == 'log' else 6.74735
