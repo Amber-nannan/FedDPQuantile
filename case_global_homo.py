@@ -8,10 +8,10 @@ Main code: Global results for identical distribution
 ray.init(runtime_env={"working_dir": "."})  # Set working directory
 os.makedirs("output", exist_ok=True)
 
-dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
+dist_type = 'normal' 
 gene_process = 'homo' # 'hete' / 'hete_d'
 mode='global'
-T_mode='samples'  # samples / rounds
+T_mode='samples'
 n_sim = 1000
 seed = 42 if gene_process == 'homo' else 2025
 n_clients = 10

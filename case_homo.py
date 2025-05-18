@@ -8,13 +8,13 @@ Main code: Identical distribution
 ray.init(runtime_env={"working_dir": "."})  # Set working directory
 os.makedirs("output", exist_ok=True)
 
-dist_type = 'cauchy'   # types = ['normal', 'uniform', 'cauchy']
+dist_type = 'normal'
 gene_process = 'homo' # 'hete' / 'hete_d'
 mode='federated' # federated / global
 T_mode='samples'  # samples / rounds
 n_sim = 1000
 seed = 42
-a=0.6;b=0;c=10 # a=0.51, b=100,c=20 for normal
+a=0.51; b=100; c=20
 
 Ts = [10000, 50000] if T_mode == 'samples' else [5000,50000]
 tauss = [[0.5]*10,np.linspace(0.3, 0.5, 10).tolist(),

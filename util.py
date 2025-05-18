@@ -4,7 +4,7 @@ import ray
 
 
 def generate_data(dist_type, tau, n_samples, mu=0):
-    """Generate a data stream from a specified distribution with mean mu, and return the data along with the true quantiles."""
+    """Generate a data stream from a specified distribution with location mu, and return the data along with the true quantiles."""
     if dist_type == 'normal':
         data = np.random.normal(mu, 1, n_samples)      # Normal(mu, 1)
         true_q = mu + norm.ppf(tau)

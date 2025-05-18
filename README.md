@@ -1,7 +1,3 @@
-# FedDPQuantile
-
-FedDPQuantile is a framework for differentially private quantile estimation in federated learning. It supports simulating both homogeneous and heterogeneous client distributions, enabling evaluation of privacy-preserving algorithms under diverse federated settings.
-
 ## File Description
 
 The directory structure for FedDPQuantile is as follows:
@@ -32,10 +28,10 @@ FedDPQuantile/
 ### Experiment Cases
 
 - **case_homo.py**: Simulation under homogeneous distribution settings, where clients share the same distribution.  
-- **case_hete.py**: Simulation under heterogeneous distribution settings, where clients share the same distribution family but with different means.  
-- **case_hete_d.py**: Simulation under fully heterogeneous settings, where clients have different distribution families but with the same mean, only considering the median.  
+- **case_hete.py**: Simulation under heterogeneous distribution settings, where clients share the same distribution family but with different locations.  
+- **case_hete_d.py**: Simulation under heterogeneous settings, where clients have different distribution families.  
 - **case_global_homo.py**: Global training version for homogeneous distribution settings.  
-- **case_global_hete.py**: Global training version for heterogeneous distribution settings with different means.  
+- **case_global_hete.py**: Global training version for heterogeneous distribution settings with different locations.  
 - **case_global_hete_d.py**: Global training version for fully heterogeneous settings with different distribution families.
 
 ### Execution
@@ -60,12 +56,12 @@ pip install numpy scipy ray
 python case_homo.py
 ```
 
-2. Run a heterogeneous distribution experiment (same distribution family with different means):
+2. Run a heterogeneous distribution experiment (same distribution family with different locations):
 ```bash
 python case_hete.py
 ```
 
-3. Run a fully heterogeneous experiment (different distribution families with same mean):
+3. Run a fully heterogeneous experiment (different distribution families):
 ```bash
 python case_hete_d.py
 ```
