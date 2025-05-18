@@ -2,11 +2,11 @@ from util_fdp import *
 import ray
 
 """
-main code 同分布，但响应可能不同
+Main code: Same distribution family with different means
 """
 
-ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
-                    #   "py_modules": [".."]
+ray.init(runtime_env={"working_dir": "."})  # Set working directory
+
 os.makedirs("output", exist_ok=True)
 dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
 gene_process = 'hete' # homo / 'hete' / 'hete_d'
@@ -26,7 +26,7 @@ rs_names = rs
 Es = [1, 5,'log']
 nn_ct = len(Ts)*len(taus)*len(client_rss)*len(Es)
 
-# 初始化结果存储字典（使用defaultdict自动创建嵌套结构）
+# Initialize result storage dictionaries
 cvgdict = {}
 maedict = {}
 
@@ -47,27 +47,27 @@ abc_dict = {
     (0.9, 'log'): (0.75, 0, 2),
 }
 
-# 联邦模拟
+# Federated simulation
 ct = 0
 for T in Ts:
-    # 初始化当前样本量的字典层级
+    # Initialize dictionary level for current T
     cvgdict[T] = {}
     maedict[T] = {}
     for tau in taus:
-        # 初始化当前分位数的字典层级
+        # Initialize dictionary level for current quantiles
         cvgdict[T][tau] = {}
         maedict[T][tau] = {}
         for name_idx, client_rs in enumerate(client_rss):
             name = rs_names[name_idx]
 
-            if name == 'hetero':   # table2 暂时不关注hetero
+            if name == 'hetero':   # Temporarily ignore hetero for table2
                 continue
 
             cvgdict[T][tau][name] = {}
             maedict[T][tau][name] = {}
             for E in Es:
                 E_typ = 'log' if E == 'log' else 'cons'
-                a, b, c = abc_dict[(name, E)]  # 不同r(names)、E的组合对应不同的 (a,b,c)
+                a, b, c = abc_dict[(name, E)]  # Different combinations of r(name) and E correspond to different (a,b,c)
 
                 t1 = time.time()
                 fed_results = run_federated_simulation(
@@ -77,13 +77,13 @@ for T in Ts:
                     mode=mode,
                     n_sim=n_sim,base_seed=seed,
                     a=a, b=b,c=c,T_mode=T_mode)
-                # 分析结果
+                # Analyze results
                 z_score = 6.753 if E == 'log' else 6.74735
                 output = analyze_results(fed_results,z_score=z_score)
                 cvg = output['coverage']
                 mae = output['mae']
 
-                # 存储结果
+                # Store results
                 cvgdict[T][tau][name][E] = cvg
                 maedict[T][tau][name][E] = mae
                 t2 = time.time()

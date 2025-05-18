@@ -1,4 +1,3 @@
-# 使用示例
 import sys
 import time
 sys.path.append('..')
@@ -18,38 +17,31 @@ def generate_lists(start, end, K):
     return list_start, list_avg, list_end
 
 def objective(x, mu_list, taus):
-    """全局目标函数：计算 (1/K) * sum(Φ(x - μ_k)) - τ （σ=1）"""
-    return np.mean(norm.cdf(x - np.asarray(mu_list))) - np.mean(taus)    # 这里隐藏的设定：（1）每一台机器的数据都是正态分布 （2）每一台机器权重相同
+    """Global objective function: Calculate (1/K) * sum(Φ(x - μ_k)) - τ (σ=1)"""
+    return np.mean(norm.cdf(x - np.asarray(mu_list))) - np.mean(taus)
 
 def solve_quantile(mu_list, taus, xtol=1e-8):
-    """求解方程：(1/K) * sum(Φ(x - μ_k)) = τ （σ=1，权重均匀）"""
-    # 确定搜索区间（覆盖99.99994%概率范围）
+    """Solve equation: (1/K) * sum(Φ(x - μ_k)) = τ (σ=1, uniform weights)"""
+    # Determine search interval (covering 99.99994% probability range)
     mu_min, mu_max = np.min(mu_list), np.max(mu_list)
     bracket = (mu_min - 5, mu_max + 5)
-    # 通过lambda绑定参数调用外部目标函数
+    # Call the external target function with bound parameters using lambda
     result = root_scalar(lambda x: objective(x, mu_list, taus),
                          method='bisect',bracket=bracket,xtol=xtol)
     return result.root
 
 def _gen_power_seq(alpha, max_len):
-    """生成 [⌈1^α⌉, ⌈2^α⌉, …, ⌈max_len^α⌉]"""
+    """Generate [⌈1^α⌉, ⌈2^α⌉, …, ⌈max_len^α⌉]"""
     return [int(math.ceil((i+1)**alpha)) for i in range(max_len)]
 
 def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1, T_mode='rounds'):
     """
-    生成每轮的本地迭代次数列表
+    Generate the list of local iteration counts
     
-    参数:
-        T: 当 T_mode='samples' 时表示总样本量，当 T_mode='rounds' 时表示通信轮数
-        warm_up: 预热阶段比例
-        typ: 迭代次数类型，'log'或'cons'
-        E_cons: 常数迭代次数（当typ='cons'时使用）
-    
-    返回:
-        总样本量, 迭代次数列表
+    Returns:
+        Total sample size, iteration counts list
     """
-    if T_mode == 'rounds':
-        # 基于通信轮数
+    if T_mode == 'rounds':    # Based on communication rounds
         pre = int(T * warm_up)
         minor = T - pre
         if typ == 'log':
@@ -57,13 +49,13 @@ def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1, T_mode='rounds'):
         elif typ == 'cons':
             Em_minor = [E_cons] * minor
         elif isinstance(typ, (int, float)) and typ > 0:
-            # 幂次增长
+            # Power growth
             Em_minor = _gen_power_seq(typ, minor)
         else:
             raise ValueError("typ must be 'log', 'cons', or a float in (0,1].")
         return pre + sum(Em_minor), [1] * pre + Em_minor
     
-    elif T_mode == 'samples':  # T_mode == 'samples' 基于总样本量
+    elif T_mode == 'samples':     # Based on total sample size
         total_samples   = T
         warm_up_samples = int(total_samples * warm_up)
         remaining       = total_samples - warm_up_samples
@@ -76,7 +68,7 @@ def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1, T_mode='rounds'):
             return total_samples, Em_list
             
         elif typ == 'log':
-            Em, cur, n = [], 0, 2         # 从 log₂(2) 开始
+            Em, cur, n = [], 0, 2         # Start from log₂(2)
             while cur + math.ceil(math.log2(n)) < remaining:
                 step = math.ceil(math.log2(n))
                 Em.append(step); cur += step; n += 1
@@ -98,13 +90,13 @@ def get_Em_list(T, warm_up=0.05, typ='log', E_cons=1, T_mode='rounds'):
         raise ValueError("T_mode must be 'rounds' or 'samples'.")
 
 def save_pickle(var, file_path):
-    """保存变量到pickle文件"""
+    """Save variables to pickle file"""
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'wb') as f:
         pickle.dump(var, f)
 
 def load_pickle(file_path):
-    """从pickle文件加载变量"""
+    """Load variables from pickle file"""
     with open(file_path, 'rb') as f:
         return pickle.load(f)
 
@@ -113,11 +105,11 @@ def train(seed, dist_type, taus, client_rs, n_clients, T, E_typ='log', E_cons=1,
           gene_process='homo', mode='federated', use_true_q_init=False, a=0.51, b=100,c=2,
           return_history=False,T_mode='rounds'):
     """
-    单次联邦实验（合并全局训练和联邦训练版本）
+    Single federated experiment
     
-    参数:
-        mode: 'federated'（联邦训练）或 'global'（全局训练）
-        T_mode: 'rounds'（基于通信轮数）或 'samples'（基于总样本量）
+    Params:
+        mode: 'federated' (federated training) or 'global' (global training)
+        T_mode: 'rounds' (based on communication rounds) or 'samples' (based on total sample size)
     """
     taus = [taus] * n_clients if isinstance(taus, (int, float)) else taus
     np.random.seed(42)
@@ -132,36 +124,35 @@ def train(seed, dist_type, taus, client_rs, n_clients, T, E_typ='log', E_cons=1,
     clients_data = []
     ET, Em_list = get_Em_list(T, typ=E_typ, E_cons=E_cons, T_mode=T_mode)
 
-    # if gene_process in ['homo', 'hete']:
     if gene_process != 'hete_d':
         for k in range(n_clients):
-            data, _ = generate_data(dist_type, taus[k], ET, mu=mus[k])    # ET个sample
+            data, _ = generate_data(dist_type, taus[k], ET, mu=mus[k])    # ET samples
             clients_data.append(data)
         global_true_q = solve_quantile(mus, taus)
 
     elif gene_process == 'hete_d':
-        # 三种分布类型：normal, uniform, cauchy
+        # Three distribution types: normal, uniform, cauchy
         distribution_pool = ['normal', 'uniform', 'cauchy']
         
-        # 尽量平均地把 n_clients 划分给三种分布
+        # Divide n_clients among three distributions as evenly as possible
         c1 = n_clients // 3
         c3 = n_clients - 2*c1
-        # 得到 dist_list，例如对 10 台机器 => ['normal','normal','normal', ... 'uniform' x3, 'cauchy' x4]
+        # Get dist_list, e.g., for 10 machines => ['normal','normal','normal', ... 'uniform' x3, 'cauchy' x4]
         dist_list = []
         dist_list += [distribution_pool[0]] * c1
         dist_list += [distribution_pool[1]] * c1
         dist_list += [distribution_pool[2]] * c3
         
-        # 为每个客户端生成对应分布的数据
+        # Generate corresponding distribution data for each client
         for k in range(n_clients):
             data, _ = generate_data(dist_list[k], taus[k], ET, mu=mus[k])
             clients_data.append(data)
 
-        global_true_q = 0.0 # 只能接受中位数
+        global_true_q = 0.0  # Can only accept median
     
-    # 根据模式选择数据处理方式
+    # Choose data processing mode
     if mode == 'global':
-        # 全局训练模式：合并数据，n_clients=1
+        # Global training mode: merge data, n_clients=1
         Q_avgs = []; Vars = []; History = {}
         for i,data_i in enumerate(clients_data):
             model = DPQuantile(tau=taus[i], r=client_rs[i], true_q=global_true_q,a=a, b=b,c=c,seed=seed)
@@ -175,7 +166,7 @@ def train(seed, dist_type, taus, client_rs, n_clients, T, E_typ='log', E_cons=1,
             return global_true_q, np.mean(Q_avgs), np.mean(Vars), _
 
     elif mode == 'federated':
-        # 联邦训练模式：保留客户端数据
+        # Federated training mode: keep client data separate
         model = FedDPQuantile(n_clients=n_clients, client_rs=client_rs,
                               taus=taus,
                               true_q=global_true_q,use_true_q_init=use_true_q_init,a=a, b=b,c=c,seed=seed)
@@ -219,8 +210,8 @@ def train_history_remote(seed, dist_type, taus, client_rs, n_clients, T, E_typ,
 def run_federated_trajectory(dist_type, taus, client_rs, n_clients, 
                             T, E_typ, E_cons, gene_process, mode, use_true_q_init=False, base_seed=2025,
                             a=0.51, b=100, c=2,T_mode='rounds'):
-    """运行单次联邦训练，固定 return_history=True，返回训练轨迹"""
-    
+    """Run a single federated experiment with return_history=True to return the training history."""
+
     future = train_history_remote.remote(base_seed, dist_type, taus, client_rs, n_clients, T, E_typ,
                 E_cons, gene_process, mode, use_true_q_init=use_true_q_init,
                 a=a, b=b, c=c, return_history=True, T_mode=T_mode)

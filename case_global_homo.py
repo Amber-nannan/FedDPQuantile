@@ -2,11 +2,12 @@ from util_fdp import *
 import ray
 
 """
-main code 全局结果
+Main code: Global results for identical distribution
 """
 
-ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
+ray.init(runtime_env={"working_dir": "."})  # Set working directory
 os.makedirs("output", exist_ok=True)
+
 dist_type = 'normal'   # types = ['normal', 'uniform', 'cauchy']
 gene_process = 'homo' # 'hete' / 'hete_d'
 mode='global'
@@ -26,17 +27,17 @@ rs_names = [rs[0],'hetero',rs[1]]
 
 nn_ct = len(Ts)*len(tauss)*len(client_rss)
 
-# 初始化结果存储字典（使用defaultdict自动创建嵌套结构）
+# Initialize result storage dictionaries
 cvgdict = {}
 maedict = {}
 
-# 联邦模拟
+# Federated simulation
 ct = 0
 for T in Ts:
-    # 初始化当前样本量的字典层级
+    # Initialize dictionary level for current T
     cvgdict[T] = {};maedict[T] = {}
     for i,taus in enumerate(tauss):
-        # 初始化当前分位数的字典层级
+        # Initialize dictionary level for current quantiles
         cvgdict[T][i] = {};maedict[T][i] = {}
         for name_idx, client_rs in enumerate(client_rss):
             name = rs_names[name_idx]
@@ -49,11 +50,11 @@ for T in Ts:
                 T=T,E_typ='cons',E_cons=1,gene_process=gene_process,mode=mode,
                 n_sim=n_sim,base_seed=seed,
                 T_mode=T_mode, a=a, b=b,c=c)
-            # 分析结果
+            # Analyze results
             output = analyze_results(fed_results,z_score=6.74735)
             cvg = output['coverage'];mae = output['mae']
     
-            # 存储结果
+            # Store results
             cvgdict[T][i][name] = cvg;maedict[T][i][name] = mae
             t2 = time.time()
             ct += 1

@@ -1,33 +1,18 @@
-# nohup python case_ray_tune_2.py > nohup_r_zero_point_nine.out 2>&1 &
+#!/bin/bash
 
-# nohup python case_ray_tune.py > nohup_add_C.out 2>&1 &
+# Create log directory
+mkdir -p logs
 
+# Run all experiments sequentially and redirect logs
+python case_homo.py > logs/case_homo.log 2>&1
+python case_hete.py > logs/case_hete.log 2>&1
+python case_hete_d.py > logs/case_hete_d.log 2>&1
 
-# 顺序执行两个实验，第一个完全运行完成后再启动第二个
-# nohup python case_ray_tune.py > nohup_sigma_smaller.out 2>&1 && \
-# nohup python case_ray_tune_2.py > nohup_r_one.out 2>&1 &
+python case_global_homo.py > logs/case_global_homo.log 2>&1
+python case_global_hete.py > logs/case_global_hete.log 2>&1
+python case_global_hete_d.py > logs/case_global_hete_d.log 2>&1
 
+# Wait for all background processes to finish
+wait
 
-# nohup python case_ray_tune_2.py -r 0.5 > nohup_r_zero_point_five.out 2>&1 && \
-# nohup python case_ray_tune_2.py -r 0.85 > nohup_r_zero_point_eight_five.out 2>&1 && \
-# nohup python case_ray_tune_2.py -r 0.9 > nohup_r_zero_point_nine.out 2>&1 && \
-# nohup python case_ray_tune_2.py -r 0.95 > nohup_r_zero_point_nine_five.out 2>&1 &
-
-
-# nohup python case_ray_tune_3.py -E log > nohup_E_log.out 2>&1 &
-
-# nohup python case_ray_tune_3.py -E 1 > nohup_E_one.out 2>&1 && \
-# nohup python case_ray_tune_3.py -E 5 > nohup_E_five.out 2>&1 &
-
-
-
-nohup python case_ray_tune_4.py -r 0.25 -E 1 > nohup_r_0_25_E_1.out 2>&1 &
-nohup python case_ray_tune_4.py -r 0.9 -E log > nohup_r_0_9_E_log.out 2>&1 &
-
-
-nohup python case_ray_tune_4.py -r 0.9 -E log > nohup_r_0_9_E_log_c_1.out 2>&1 &
-nohup python case_ray_tune_4_copy.py -r 0.9 -E log > nohup_r_0_9_E_log_c_2.out 2>&1 &
-
-# 调 a,c
-nohup python case_ray_tune_4.py -r 0.25 -E 1 > nohup_r_0_25_E_1.out 2>&1 &
-nohup python case_ray_tune_4_copy.py -r 0.25 -E 1 > nohup_r_0_25_E_1.out 2>&1 &
+echo "All experiments have completed."

@@ -2,10 +2,10 @@ from util_fdp import *
 import ray
 
 """
-main code 同分布，但响应可能不同
+Main code: Identical distribution
 """
 
-ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
+ray.init(runtime_env={"working_dir": "."})  # Set working directory
 os.makedirs("output", exist_ok=True)
 
 dist_type = 'cauchy'   # types = ['normal', 'uniform', 'cauchy']
@@ -25,23 +25,21 @@ n_clients = 10
 client_rss = generate_lists(rs[0], rs[1], n_clients)
 rs_names = [rs[0],'hetero',rs[1]]
 
-# Es = ['log']
+
 Es = [1, 5,'log']
 nn_ct = len(Ts)*len(tauss)*len(client_rss)*len(Es)
 
-# 初始化结果存储字典（使用defaultdict自动创建嵌套结构）
+# Initialize result storage dictionaries
 cvgdict = {}
 maedict = {}
 
-
-
-# 联邦模拟
+# Federated simulation
 ct = 0
 for T in Ts:
-    # 初始化当前样本量的字典层级
+    # Initialize dictionary level for current T
     cvgdict[T] = {};maedict[T] = {}
     for i,taus in enumerate(tauss):
-        # 初始化当前分位数的字典层级
+        # Initialize dictionary level for current quantiles
         cvgdict[T][i] = {};maedict[T][i] = {}
         for name_idx, client_rs in enumerate(client_rss):
             name = rs_names[name_idx]
@@ -56,12 +54,12 @@ for T in Ts:
                     mode=mode,
                     n_sim=n_sim,base_seed=seed,a=a, b=b,c=c,
                 T_mode=T_mode)
-                # 分析结果
+                # Analyze results
                 z_score = 6.753 if E == 'log' else 6.74735
                 output = analyze_results(fed_results,z_score=z_score)
                 cvg = output['coverage'];mae = output['mae']
 
-                # 存储结果
+                # Store results
                 cvgdict[T][i][name][E] = cvg;maedict[T][i][name][E] = mae
                 t2 = time.time()
                 ct += 1

@@ -1,10 +1,8 @@
 import numpy as np
 from typing import Optional
 
-
-
 class DPQuantile:
-    """差分隐私分位数估计基类"""
+    """Base class for differential privacy quantile estimation"""
         
     def __init__(self, tau=0.5, r=0.5, true_q=None,
      track_history=False, burn_in_ratio=0, use_true_q_init=False,a=0.51,b=100,c=2,
@@ -14,9 +12,9 @@ class DPQuantile:
         self.true_q = true_q
         self.track_history = track_history
         self.burn_in_ratio = burn_in_ratio
-        self.use_true_q_init = use_true_q_init  # 新增参数
-        self.q_avg_history = {}  # 记录每次更新的Q_avg
-        self.variance_history = {}  # 记录每次更新的var
+        self.use_true_q_init = use_true_q_init 
+        self.q_avg_history = {}
+        self.variance_history = {}
         self.a = a
         self.b = b
         self.c0 = c
@@ -24,25 +22,26 @@ class DPQuantile:
 
     def _lr_schedule(self,step,c0=2,a=0.51,b=100):
         """
-        学习率策略
+        Learning rate schedule
         """
-        lr = c0 / (step**a + b)  # lr = c0 / (step**a + 500)
+        lr = c0 / (step**a + b)
         return lr
 
     def reset(self, q_est: Optional[float]=None):
-        """重置训练状态"""
+        """Reset training state"""
         if self.use_true_q_init and self.true_q is not None:
-            self.q_est = self.true_q  # 从真值开始
+            self.q_est = self.true_q  # Start from true value
         elif q_est:
             self.q_est = q_est
         else:
             np.random.seed(self.seed)
             self.q_est = np.random.normal(0,1)
+            
         self.Q_avg = 0.0
         self.n = 0
         self.step = 0
         
-        # 在线推断统计量
+        # Online inference statistics
         self.v_a = 0.0
         self.v_b = 0.0
         self.v_s = 0.0
@@ -50,7 +49,7 @@ class DPQuantile:
         self.errors = []
 
     def _compute_gradient(self, x):
-        """核心梯度计算"""
+        """Core gradient computation"""
         if np.random.rand() < self.r:
             s = int(x > self.q_est)
         else:
@@ -61,25 +60,24 @@ class DPQuantile:
         return delta
 
     def _update_estimator(self, delta, lr):
-        """参数更新"""
+        """Update parameter"""
         self.q_est += lr * delta
         self.step += 1
 
     def _update_stats(self):
-        """更新统计量"""
+        """Update statistics"""
         self.n += 1
         prev_weight = (self.n - 1) / self.n
         self.Q_avg = prev_weight * self.Q_avg + self.q_est / self.n
         
-        
-        # 更新方差统计量
+        # Update variance statistics
         term = self.n**2
         self.v_a += term * self.Q_avg**2
         self.v_b += term * self.Q_avg
         self.v_q += term
         self.v_s += 1
 
-        # 记录当前样本数量对应的Q_avg
+        # Record Q_avg and variance for the current sample size
         self.q_avg_history[self.n] = self.Q_avg
         self.variance_history[self.n] = self.get_variance()
         
@@ -87,28 +85,29 @@ class DPQuantile:
             self.errors.append(np.abs(self.Q_avg - self.true_q))
 
     def fit(self, data_stream):
-        """单机版训练方法"""
+        """Single-machine training method"""
         self.reset()
         n_samples = len(data_stream)
-        burn_in = int(n_samples * self.burn_in_ratio)  # 计算预热样本数
+        burn_in = int(n_samples * self.burn_in_ratio)  # Calculate burn-in sample size
         for idx, x in enumerate(data_stream):
-            # 计算当前步骤的学习率
+            # Calculate learning rate for the current step
             lr = self._lr_schedule(self.step + 1,
                             c0=self.c0,a=self.a,b=self.b)
             
-            # 计算梯度并更新估计值
+            # Compute gradient and update estimator
             delta = self._compute_gradient(x)
             self._update_estimator(delta, lr)
             
-            # 跳过预热阶段的统计量更新
+            # Skip statistics update during burn-in phase
             if idx >= burn_in:
                 self._update_stats()
             
-            # 提前终止检查
+            # Early stopping check
             if self.step >= n_samples:
                 break
 
     def get_stats_history(self):
+        """Get the history of Q_avg and variance statistics"""
         stats = {
             "q_avg": self.q_avg_history,
             "variance": self.variance_history
@@ -116,7 +115,7 @@ class DPQuantile:
         return stats
 
     def get_variance(self):
-        """获取方差估计"""
+        """Get variance estimation"""
         if self.n == 0:
             return 0.0
         return (self.v_a - 2*self.Q_avg*self.v_b + 

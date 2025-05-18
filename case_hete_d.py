@@ -3,10 +3,10 @@ import ray
 
 
 """
-main code 分布和响应r均异质，此时我们只能考虑中位数
+Main code: Different distribution families with the same mean, only consider the median
 """
 
-ray.init(runtime_env={"working_dir": "."})  # 设置工作目录
+ray.init(runtime_env={"working_dir": "."})  # Set working directory
 
 
 os.makedirs("output", exist_ok=True)
@@ -21,8 +21,6 @@ Ts = [10000, 50000] if T_mode == 'samples' else [5000,50000]
 taus = [0.5]
 rs = [0.25,0.9]
 
-## Case 2 n clients=10, E=1,5,log
-
 n_clients = 10
 client_rss = generate_lists(rs[0], rs[1], n_clients)
 rs_names = [rs[0],'hetero',rs[1]]
@@ -30,17 +28,17 @@ rs_names = [rs[0],'hetero',rs[1]]
 Es = [1,5,'log']
 nn_ct = len(Ts)*len(taus)*len(client_rss)*len(Es)
 
-# 初始化结果存储字典（使用defaultdict自动创建嵌套结构）
+# Initialize result storage dictionaries
 cvgdict = {}
 maedict = {}
 
-# 联邦模拟
+# Federated simulation
 ct = 0
 for T in Ts:
-    # 初始化当前样本量的字典层级
+    # Initialize dictionary level for current T
     cvgdict[T] = {};maedict[T] = {}
     for tau in taus:
-        # 初始化当前分位数的字典层级
+        # Initialize dictionary level for current quantiles
         cvgdict[T][tau] = {};maedict[T][tau] = {}
         for name_idx, client_rs in enumerate(client_rss):
             name = rs_names[name_idx]
@@ -55,12 +53,12 @@ for T in Ts:
                     mode=mode,
                     T_mode=T_mode,
                     n_sim=n_sim,base_seed=seed,a=0.51, b=100,c=20)
-                # 分析结果
+                # Analyze results
                 z_score = 6.753 if E == 'log' else 6.74735
                 output = analyze_results(fed_results,z_score=z_score)
                 cvg = output['coverage'];mae = output['mae']
 
-                # 存储结果
+                # Store results
                 cvgdict[T][tau][name][E] = cvg;maedict[T][tau][name][E] = mae
                 t2 = time.time()
                 ct += 1
