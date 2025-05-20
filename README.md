@@ -1,3 +1,7 @@
+This Python code implements the proposed federated quantile inference method under LDP.
+
+Please run 'run.sh' to obtain the simulation results.
+
 ## File Description
 
 The directory structure for FedDPQuantile is as follows:
